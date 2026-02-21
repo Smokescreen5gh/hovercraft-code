@@ -16,8 +16,10 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
+  // Initializes the I2C Hardware
   Wire.begin(SDA_PIN, SCL_PIN);
 
+  // Writes a status to Serial Monitor
   Serial.println("Initializing OLED...");
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
@@ -25,13 +27,19 @@ void setup() {
     while (true); // Stop here if failed
   }
 
+  // Clears the Display
   display.clearDisplay();
 
-  display.setTextSize(2);
+  display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(10, 20);
-  display.println("HELLO");
 
+  // Sets Cursor Location
+  display.setCursor(10, 20);
+
+  //What to write in the display
+  display.println("Hello World");
+
+  // Displays it to the screen
   display.display();  // <-- actually updates screen
 
   Serial.println("OLED initialized");
