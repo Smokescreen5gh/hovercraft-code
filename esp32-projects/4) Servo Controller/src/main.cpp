@@ -84,10 +84,15 @@ void TaskPotsAndDisplay(void *pvParameters) {
     int pot1 = analogRead(POT1_PIN);
     int pot2 = analogRead(POT2_PIN);
 
-    // Map POT1 -> servo angle
+    static int lastAngle = -999;
+
     int angle = map(pot1, 0, 4095, 0, 180);
     angle = constrain(angle, 0, 180);
-    myServo.write(angle);
+
+    if (abs(angle - lastAngle) >= 2) {   // 2° deadband
+      myServo.write(angle);
+      lastAngle = angle;
+    }
 
     // ---- Serial Monitor Output ----
     Serial.print("POT 1: ");
