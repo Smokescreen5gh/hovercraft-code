@@ -1,102 +1,193 @@
+/**
+ * ESP32 + FreeRTOS Demo: LED Blinker Task + Live Potentiometer Readout (Serial + OLED)
+ *
+ * What this sketch demonstrates:
+ *  - ESP32 Arduino runs on FreeRTOS.
+ *  - We create TWO tasks:
+ *      Task 1: Blink the onboard LED with a specific timing pattern (non-blocking to other tasks)
+ *      Task 2: Read two potentiometers and display values on Serial + I2C OLED at a fixed rate
+ *
+ * Key RTOS concept:
+ *  - Use vTaskDelay() inside tasks (NOT delay()) so only that task sleeps while others continue.
+ *
+ * Hardware wiring (recommended):
+ *  - Pot ends: 3.3V and GND (DO NOT power pots from 5V if wiper goes to ESP32 ADC)
+ *  - Pot 1 wiper (middle pin) -> GPIO 26
+ *  - Pot 2 wiper (middle pin) -> GPIO 27
+ *  - OLED (SSD1306 I2C): SDA -> GPIO 21, SCL -> GPIO 22, VCC -> 3.3V, GND -> GND
+ *
+ * Notes:
+ *  - GPIO 26/27 are ADC2 pins. They work fine as long as you are NOT using WiFi.
+ *    If you later use WiFi/ESP-NOW, move pots to ADC1 pins (e.g., 32/33/34/35/36/39).
+ *  - OLED/I2C is NOT thread-safe by default: keep all display calls in ONE task (we do).
+ */
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+// --------------------------- OLED Configuration ---------------------------
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
-#define OLED_RESET -1
+#define OLED_RESET -1              // Most I2C SSD1306 modules don't use a reset pin
+#define OLED_I2C_ADDRESS 0x3C       // Common addresses: 0x3C or 0x3D
 
-// Define Pins for OLED I2C Protocol
+// --------------------------- Pin Definitions ---------------------------
+// I2C pins for ESP32 (common defaults: SDA=21, SCL=22)
 #define SDA_PIN 21
 #define SCL_PIN 22
 
-// Define Pin 2 for internal LED
-#define LED 2
+// Onboard LED (varies by board; many devkits use GPIO 2)
+#define LED_PIN 2
 
-// Pot pins 
+// Potentiometer ADC pins
 #define POT1_PIN 26
 #define POT2_PIN 27
 
+// --------------------------- Global Objects ---------------------------
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-void ledblinker() {
-digitalWrite(LED, HIGH);
-  delay(3000);
-  
-digitalWrite(LED, LOW);
-  delay(100);
+// --------------------------- Task: LED Blinker ---------------------------
+/**
+ * TaskLEDBlinker
+ * Blinks LED 
+ *  - ON  3000ms
+ *  - OFF 100ms
+ *  - ON  100ms
+ *  - OFF 100ms
+ *
+ * Uses vTaskDelay() so it does NOT block other tasks.
+ */
+void TaskLEDBlinker(void *pvParameters) {
+  (void)pvParameters;
 
-digitalWrite(LED, HIGH);
-delay(100);
+  pinMode(LED_PIN, OUTPUT);
 
-digitalWrite(LED, LOW);
-delay(100);
+  while (true) {
+    digitalWrite(LED_PIN, HIGH);
+    vTaskDelay(pdMS_TO_TICKS(3000));
+
+    digitalWrite(LED_PIN, LOW);
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    digitalWrite(LED_PIN, HIGH);
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    digitalWrite(LED_PIN, LOW);
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
 }
 
+// --------------------------- Task: Pots + Serial + OLED ---------------------------
+/**
+ * TaskPotsAndDisplay
+ * Reads two potentiometers and prints + displays them at a fixed update rate.
+ * Keeping all OLED calls in this one task avoids I2C concurrency issues.
+ */
+void TaskPotsAndDisplay(void *pvParameters) {
+  (void)pvParameters;
 
+  // ADC configuration (ESP32)
+  analogReadResolution(12);        // 12-bit ADC -> 0..4095
+  analogSetAttenuation(ADC_11db);  // Best for ~0..3.3V input range
+
+  while (true) {
+    // Read potentiometers (raw ADC counts)
+    int pot1 = analogRead(POT1_PIN);
+    int pot2 = analogRead(POT2_PIN);
+
+    // ---- Serial Monitor Output ----
+    Serial.print("POT 1: ");
+    Serial.print(pot1);
+    Serial.print(" | POT 2: ");
+    Serial.println(pot2);
+
+    // ---- OLED Output ----
+    display.clearDisplay();
+
+    display.setCursor(0, 0);
+    display.print("POT 1:");
+    display.println(pot1);
+
+    display.setCursor(67, 0);
+    display.print("POT 2:");
+    display.println(pot2);
+
+    display.display();
+
+    // Update rate: 20ms -> ~50Hz (controller-like)
+    vTaskDelay(pdMS_TO_TICKS(20));
+  }
+}
+
+// --------------------------- Arduino Setup ---------------------------
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  delay(200); // small startup delay for serial monitor attachment
 
-  pinMode(LED, OUTPUT);
-
-  // Initializes the I2C Hardware
+  // I2C init
   Wire.begin(SDA_PIN, SCL_PIN);
 
-  // Writes a status to Serial Monitor
+  // OLED init
   Serial.println("Initializing OLED...");
-
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-    Serial.println("SSD1306 not found at 0x3C");
-    while (true); // Stop here if failed
+  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDRESS)) {
+    Serial.println("SSD1306 not found. Check wiring and I2C address (0x3C/0x3D).");
+    while (true) { delay(1000); } // halt if OLED init fails
   }
 
-  // Clears the Display
+  // Basic OLED settings
   display.clearDisplay();
-
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
 
-  // Sets Cursor Location
+  // Startup message (shown once)
   display.setCursor(10, 20);
-
-  //What to write in the display
   display.println("Pot Reader Ready");
-
-  // Displays it to the screen
-  display.display();  // <-- actually updates screen
+  display.display();
 
   Serial.println("OLED initialized");
+
+  // --------------------------- Create RTOS Tasks ---------------------------
+  // Task priorities:
+  //  - Pots/OLED task priority 2: keep UI/input responsive
+  //  - LED task priority 1: lower priority is fine
+  //
+  // Stack sizes:
+  //  - LED: small stack
+  //  - OLED task: larger (display libs + buffers)
+  //
+  // Core pinning (ESP32 has 2 cores):
+  //  - LED pinned to core 0
+  //  - Pots/OLED pinned to core 1
+  // Pinning is optional, but useful for learning and predictability.
+ 
+  // Runs Task 1
+  xTaskCreatePinnedToCore(
+    TaskLEDBlinker,   // task function
+    "LED Blinker",    // name
+    2048,             // stack size
+    NULL,             // parameters
+    1,                // priority
+    NULL,             // task handle
+    0                 // core (0 is fine)
+  );
+
+  // Run Task 2
+  xTaskCreatePinnedToCore(
+    TaskPotsAndDisplay,   // task function
+    "Pots+OLED",          // name
+    4096,                 // stack size (OLED needs more)
+    NULL,                 // parameters
+    2,                    // priority (higher than LED)
+    NULL,                 // task handle
+    1                     // core (1 is fine)
+  );
 }
+
 
 void loop() {
-  //ledblinker();
-
-  // Read the Potentiometer Reading
-  int pot1 = analogRead(POT1_PIN);
-  int pot2 = analogRead(POT2_PIN);
-
-  // -- Serial Monitor Output --
-  Serial.print("POT 1: ");
-  Serial.print(pot1);
-  Serial.print(" | POT 2: ");
-  Serial.println(pot2);
-
-  // ---- Display to the Oled Display----
-  display.clearDisplay();
-
-   display.setCursor(0, 0);
-  display.print("POT 1: ");
-  display.println(pot1);
-
-  display.setCursor(0, 16);
-  display.print("POT 2: ");
-  display.println(pot2);
-
-  display.display();
-  delay(5);
-
+  vTaskDelay(pdMS_TO_TICKS(1000));
 }
 
-
+ 
