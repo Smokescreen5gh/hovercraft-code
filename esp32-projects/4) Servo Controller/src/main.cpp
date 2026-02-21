@@ -73,7 +73,7 @@ void TaskPotsAndDisplay(void *pvParameters) {
   analogReadResolution(12);        // 12-bit ADC -> 0..4095
   analogSetAttenuation(ADC_11db);  // Best for ~0..3.3V input range
 
-  // Servo init (do it inside the task so it happens on this core/task context)
+  // Servo init 
   myServo.setPeriodHertz(50);            // 50Hz servo
   myServo.attach(SERVO_PIN, 500, 2500);  // pulse widths in microseconds
 
