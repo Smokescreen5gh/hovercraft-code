@@ -30,19 +30,27 @@ void setup() {
   // Clears the Display
   display.clearDisplay();
 
+  display.setFont();  
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
 
   // Sets Cursor Location
-  display.setCursor(10, 20);
+  display.setCursor(0, 0);
 
   //What to write in the display
   display.println("Hello World");
 
+  display.setCursor(0, 9);
+  display.println("Hello World 2");
+  display.setCursor(0, 18);
+  display.println("Hello World 3");
+  display.setCursor(0, 27);
+  display.println("Hello World 4");
+
   // Displays it to the screen
   display.display();  // <-- actually updates screen
 
-  Serial.println("OLED initialized");
+  Serial.println("OLED initialized"); 
 }
 
 void loop() {
