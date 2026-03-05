@@ -73,11 +73,6 @@ bool NrfRadio::sendPackage(const RadioPayload& p) {
         _counter++;
     }
 
-    // Track last sent text only for TEXT packets (not heartbeat)
-    if (p.type == PacketType::TEXT) {
-      strncpy(_lastSent, p.text, sizeof(_lastSent) - 1);
-      _lastSent[sizeof(_lastSent) - 1] = '\0'; // guarantee termination
-    }
   }
 
   return ok;
@@ -95,12 +90,6 @@ bool NrfRadio::receivePackage(RadioPayload& out) {
   _lastRxMs = millis();
   _connected = true;
 
-  // Track last received text only for TEXT packets (not heartbeat)
-  if (out.type == PacketType::TEXT) {
-    strncpy(_lastReceived, out.text, sizeof(_lastReceived) - 1);
-    _lastReceived[sizeof(_lastReceived) - 1] = '\0';
-  }
-
   return true;
 }
 
@@ -113,8 +102,7 @@ void NrfRadio::serviceConnection() {
     RadioPayload hb{};
     hb.type = PacketType::HEARTBEAT;
     hb.counter = _counter;     // optional but fine
-    hb.text[0] = '\0';         // empty text
-
+  
     sendPackage(hb);
 
     _lastHeartbeatTxMs = now;

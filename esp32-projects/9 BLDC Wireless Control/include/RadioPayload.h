@@ -11,7 +11,7 @@ enum class PacketType : uint8_t {
 struct RadioPayload {
   PacketType type;       // HEARTBEAT or TEXT
   uint16_t   counter;    // increments every send (helps debugging) basically monitors how many times the packets the struct has been sent. can help identify if any packets were gone
-  char       text[24];   // message text (null-terminated)
+  uint16_t   potRaw;
 };
 
 // NRF24L01 payload max is 32 bytes by default
