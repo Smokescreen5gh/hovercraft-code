@@ -2,7 +2,6 @@
 
 #include "NRF_Radio.h" // Uses the .h file that holds the class defintion 
 #include <SPI.h>
-#include <cstring>
 
 // Define the Constructor
 // ---------------------- Constructor ----------------------
@@ -19,11 +18,10 @@ NrfRadio::NrfRadio(uint8_t cePin, uint8_t csnPin, const uint8_t* rxAddress, cons
     _counter(0)
     
     {
-        // For Debugging Purposes 
-        memset(_lastSent, 0, sizeof(_lastSent));
-        memset(_lastReceived, 0, sizeof(_lastReceived));
-    }
 
+    }
+        
+    
 // ------------------- METHOD 1 Begin() ----------------------
 bool NrfRadio::begin() {
   // Start SPI (ESP32 default SPI pins are used unless you pass custom pins)
@@ -72,7 +70,6 @@ bool NrfRadio::sendPackage(const RadioPayload& p) {
     if (p.type != PacketType::HEARTBEAT) {
         _counter++;
     }
-
   }
 
   return ok;
@@ -102,7 +99,9 @@ void NrfRadio::serviceConnection() {
     RadioPayload hb{};
     hb.type = PacketType::HEARTBEAT;
     hb.counter = _counter;     // optional but fine
-  
+    hb.pot1Raw = 0;
+    hb.pot2Raw = 0;
+    
     sendPackage(hb);
 
     _lastHeartbeatTxMs = now;

@@ -27,6 +27,13 @@
 static const uint8_t RADIO_RX_ADDR[6] = "00001";
 static const uint8_t RADIO_TX_ADDR[6] = "00002";
 
+
+// --------- Pin Definitions for Potentiometers ----------
+#define POT1_PIN 26
+#define POT2_PIN 27
+
+
+
 // --------- Creating Objects ----------
 
 // Create radio object (CE, CSN)
@@ -35,15 +42,19 @@ NrfRadio radio(PIN_CE, PIN_CSN, RADIO_RX_ADDR, RADIO_TX_ADDR, 1);
 // Create Display Object
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// ---------- Message to Send -------
-static const char* sendMessage = "Hello Board 2!";
-static char lastRx[24] = "(none)";
+// ---------- Pot Values (for OLED display) -------
+static uint16_t pot1Val = 0;
+static uint16_t pot2Val = 0;
 
 void setup() {
   Serial.begin(115200);
   delay(200);
 
   Serial.println("Starting NRF24 Transmitter...");
+
+  // Potentiometer setup
+  pinMode(POT1_PIN, INPUT);
+  pinMode(POT2_PIN, INPUT);
 
   // Oled Screeen Intializtion
   Wire.begin(SDA_PIN, SCL_PIN);
@@ -68,23 +79,20 @@ void loop() {
   // 1) Maintain heartbeat + timeout
   radio.serviceConnection();
 
-  // 2) Check for received packets
-  RadioPayload in{};
-  bool gotPacket = radio.receivePackage(in);
-  if (gotPacket && in.type == PacketType::TEXT) {
-    strncpy(lastRx, in.text, sizeof(lastRx));
-    lastRx[sizeof(lastRx) - 1] = '\0';
-  }
+  // 2) Read potentiometers (local)
+  pot1Val = analogRead(POT1_PIN);
+  pot2Val = analogRead(POT2_PIN);
 
-  // 3) Send TEXT every 1 second
-  static uint32_t lastTextMs = 0;
-  if (millis() - lastTextMs >= 1000) {
-    lastTextMs = millis();
+  // 3) Send POT data periodically (50 Hz = every 20 ms)
+  static uint32_t lastPotMs = 0;
+  if (millis() - lastPotMs >= 20) {
+    lastPotMs = millis();
 
     RadioPayload out{};
-    out.type = PacketType::TEXT;
-    out.counter = 0;   // you don’t really care anymore
-    strncpy(out.text, sendMessage, sizeof(out.text));
+    out.type = PacketType::POT;
+    out.counter = 0;     // you don’t really care anymore
+    out.pot1Raw = pot1Val;
+    out.pot2Raw = pot2Val;
 
     radio.sendPackage(out);
   }
@@ -116,18 +124,14 @@ void loop() {
 
     // ----- Line 4 -----
     display.setCursor(0, 28);
-    display.print("Send: ");
-    display.print(sendMessage);
+    display.print("P1: ");
+    display.print(pot1Val);
 
     // ----- Line 5 -----
     display.setCursor(0, 38);
-    display.print("Recv: ");
-    if (radio.isConnected()) {
-      display.print(lastRx);
-    } 
-    else {
-      display.print("(none)");
-    }
+    display.print("P2: ");
+    display.print(pot2Val);
+
     display.display();
   }
 }

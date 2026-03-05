@@ -1,3 +1,4 @@
+// Import Libraries 
 #include <Arduino.h>
 #include <SPI.h>
 #include <nRF24L01.h>
@@ -35,9 +36,9 @@ NrfRadio radio(PIN_CE, PIN_CSN, RADIO_RX_ADDR, RADIO_TX_ADDR, 2);
 // Create Display Object
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// ---------- Message to Send -------
-static const char* sendMessage = "Hello Board 1!";
-static char lastRx[24] = "(none)";
+// ---------- Received Pot Values -------
+static uint16_t pot1Rx = 0;
+static uint16_t pot2Rx = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -71,27 +72,16 @@ void loop() {
   // 2) Check for received packets
   RadioPayload in{};
   bool gotPacket = radio.receivePackage(in);
-  if (gotPacket && in.type == PacketType::TEXT) {
-    strncpy(lastRx, in.text, sizeof(lastRx));
-    lastRx[sizeof(lastRx) - 1] = '\0';
+
+  // Only update pot values when we receive a POT packet
+  if (gotPacket && in.type == PacketType::POT) {
+    pot1Rx = in.pot1Raw;
+    pot2Rx = in.pot2Raw;
   }
 
   if (gotPacket) {
     Serial.print("RX packet type=");
-    Serial.println((int)in.type);  // 0 heartbeat, 1 text
-  }
-
-  // 3) Send TEXT every 1 second
-  static uint32_t lastTextMs = 0;
-  if (millis() - lastTextMs >= 1000) {
-    lastTextMs = millis();
-
-    RadioPayload out{};
-    out.type = PacketType::TEXT;
-    out.counter = 0;   // you don’t really care anymore
-    strncpy(out.text, sendMessage, sizeof(out.text));
-
-    radio.sendPackage(out);
+    Serial.println((int)in.type);  // 0 heartbeat, 1 pot
   }
 
   // Display on OLED Screen
@@ -121,18 +111,13 @@ void loop() {
 
     // ----- Line 4 -----
     display.setCursor(0, 28);
-    display.print("Send: ");
-    display.print(sendMessage);
+    display.print("P1 RX: ");
+    display.print(pot1Rx);
 
     // ----- Line 5 -----
     display.setCursor(0, 38);
-    display.print("Recv: ");
-    if (radio.isConnected()) {
-      display.print(lastRx);
-    } 
-    else {
-      display.print("(none)");
-    }
+    display.print("P2 RX: ");
+    display.print(pot2Rx);
     
     display.display();
   }
