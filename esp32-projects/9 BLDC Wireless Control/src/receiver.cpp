@@ -111,13 +111,24 @@ void loop() {
 
     // ----- Line 4 -----
     display.setCursor(0, 28);
-    display.print("P1 RX: ");
-    display.print(pot1Rx);
+    display.print("P1: ");
+    if (radio.isConnected()) {
+      display.print(pot1Rx);
+    }
+    else {
+      display.print(" ");
+    }
 
     // ----- Line 5 -----
     display.setCursor(0, 38);
-    display.print("P2 RX: ");
-    display.print(pot2Rx);
+    display.print("P2: ");
+     if (radio.isConnected()) {
+      display.print(pot2Rx);
+    }
+    else {
+      display.print(" ");
+    }
+
     
     display.display();
   }

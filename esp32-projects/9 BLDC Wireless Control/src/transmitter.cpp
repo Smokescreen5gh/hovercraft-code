@@ -81,11 +81,15 @@ void loop() {
   // 1) Maintain heartbeat + timeout
   radio.serviceConnection();
 
-  // 2) Read potentiometers data
+  // 2) Check for received packets
+  RadioPayload in{};
+  bool gotPacket = radio.receivePackage(in);
+
+  // 3) Read potentiometers data
   pot1.update();
   pot2.update();
 
-  // 3) Send POT data periodically (50 Hz = every 20 ms)
+  // 4) Send POT data periodically (50 Hz = every 20 ms)
   static uint32_t lastPotMs = 0;
   if (millis() - lastPotMs >= 20) {
     lastPotMs = millis();
