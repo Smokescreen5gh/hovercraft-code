@@ -52,6 +52,7 @@ void setup() {
   Serial.begin(115200);
   delay(200);
 
+  // Prints a text to Serial Monitor
   Serial.println("Starting NRF24 Transmitter...");
 
   // Potentiometer setup

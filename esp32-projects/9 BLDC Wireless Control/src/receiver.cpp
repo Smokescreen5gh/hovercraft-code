@@ -8,6 +8,7 @@
 #include <Adafruit_SSD1306.h>
 
 #include "NRF_Radio.h"
+#include <ESP32Servo.h>
 
 // --------- Pin Definitions for NRF2401L ----------
 #define PIN_SCK   18
@@ -25,6 +26,9 @@
 #define SDA_PIN 21
 #define SCL_PIN 22
 
+// --------- Pin Definitions for Brushless Motors ----------
+#define motor1 4
+
 static const uint8_t RADIO_RX_ADDR[6] = "00002";
 static const uint8_t RADIO_TX_ADDR[6] = "00001";
 
@@ -36,15 +40,23 @@ NrfRadio radio(PIN_CE, PIN_CSN, RADIO_RX_ADDR, RADIO_TX_ADDR, 2);
 // Create Display Object
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+// Create BLDC Object
+Servo BLDC_1;
+
 // ---------- Received Pot Values -------
-static uint16_t pot1Rx = 0;
-static uint16_t pot2Rx = 0;
+static uint16_t pot1Rx;
+static uint16_t pot2Rx;
 
 void setup() {
   Serial.begin(115200);
   delay(200);
 
+  // Prints a text to Serial Monitor
   Serial.println("Starting NRF24 Reciever...");
+
+  // Servo init 
+  BLDC_1.setPeriodHertz(50);            // 50Hz servo
+  BLDC_1.attach(motor1, 1000, 2000);  // pulse widths in microseconds
 
   // Oled Screeen Intializtion
   Wire.begin(SDA_PIN, SCL_PIN);
@@ -83,6 +95,9 @@ void loop() {
     Serial.print("RX packet type=");
     Serial.println((int)in.type);  // 0 heartbeat, 1 pot
   }
+
+  int throttle = map(pot1Rx, 0, 4095, 1000, 2000);
+  BLDC_1.writeMicroseconds(throttle);
 
   // Display on OLED Screen
   static uint32_t lastOledMs = 0;
