@@ -1,3 +1,4 @@
+// Import Libraries 
 #include <Arduino.h>
 #include <SPI.h>
 #include <nRF24L01.h>
@@ -6,6 +7,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+// Custom Classes
 #include "NRF_Radio.h"
 #include "POT.h"
 
@@ -46,7 +48,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 // Create Potentiometer Objects
 Potentiometer pot1(POT1_PIN, "POT 1");
 Potentiometer pot2(POT2_PIN, "POT 2");
-
+static char motor1State = 'D';
+static char motor2State = 'D';
 
 void setup() {
   Serial.begin(115200);
@@ -86,6 +89,11 @@ void loop() {
   RadioPayload in{};
   bool gotPacket = radio.receivePackage(in);
 
+    if (gotPacket && in.type == PacketType::MOTOR_STATUS) {
+      motor1State = in.motor1State;
+      motor2State = in.motor2State;
+    }
+
   // 3) Read potentiometers data
   pot1.update();
   pot2.update();
@@ -116,7 +124,7 @@ void loop() {
 
     // ----- Line 1 -----
     display.setCursor(0, 0);
-    display.print("NRF Module Tester #1");
+    display.print("NRF Module Transmitter");
 
     // ----- Line 2 -----
     display.setCursor(0, 9);
@@ -131,13 +139,21 @@ void loop() {
 
     // ----- Line 4 -----
     display.setCursor(0, 28);
-    display.print("P1: ");
+    display.print("M1:");
     display.print(pot1.getValue());
+    display.print(" ");
+
+    display.setCursor(50, 28);
+    display.print(motor1State);
 
     // ----- Line 5 -----
     display.setCursor(0, 38);
-    display.print("P2: ");
+    display.print("M2:");
     display.print(pot2.getValue());
+    display.print(" ");
+
+    display.setCursor(50, 38);
+    display.print(motor2State);
 
     display.display();
   }
