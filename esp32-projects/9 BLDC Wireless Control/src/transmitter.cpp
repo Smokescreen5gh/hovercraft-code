@@ -7,6 +7,7 @@
 #include <Adafruit_SSD1306.h>
 
 #include "NRF_Radio.h"
+#include "POT.h"
 
 // --------- Pin Definitions for NRF2401L ----------
 #define PIN_SCK   18
@@ -42,9 +43,10 @@ NrfRadio radio(PIN_CE, PIN_CSN, RADIO_RX_ADDR, RADIO_TX_ADDR, 1);
 // Create Display Object
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// ---------- Pot Values (for OLED display) -------
-static uint16_t pot1Val = 0;
-static uint16_t pot2Val = 0;
+// Create Potentiometer Objects
+Potentiometer pot1(POT1_PIN, "POT 1");
+Potentiometer pot2(POT2_PIN, "POT 2");
+
 
 void setup() {
   Serial.begin(115200);
@@ -53,8 +55,8 @@ void setup() {
   Serial.println("Starting NRF24 Transmitter...");
 
   // Potentiometer setup
-  pinMode(POT1_PIN, INPUT);
-  pinMode(POT2_PIN, INPUT);
+  pot1.begin();
+  pot2.begin();
 
   // Oled Screeen Intializtion
   Wire.begin(SDA_PIN, SCL_PIN);
@@ -79,9 +81,9 @@ void loop() {
   // 1) Maintain heartbeat + timeout
   radio.serviceConnection();
 
-  // 2) Read potentiometers (local)
-  pot1Val = analogRead(POT1_PIN);
-  pot2Val = analogRead(POT2_PIN);
+  // 2) Read potentiometers data
+  pot1.update();
+  pot2.update();
 
   // 3) Send POT data periodically (50 Hz = every 20 ms)
   static uint32_t lastPotMs = 0;
@@ -91,8 +93,8 @@ void loop() {
     RadioPayload out{};
     out.type = PacketType::POT;
     out.counter = 0;     // you don’t really care anymore
-    out.pot1Raw = pot1Val;
-    out.pot2Raw = pot2Val;
+    out.pot1Raw = pot1.getValue();
+    out.pot2Raw = pot2.getValue();
 
     radio.sendPackage(out);
   }
@@ -125,12 +127,12 @@ void loop() {
     // ----- Line 4 -----
     display.setCursor(0, 28);
     display.print("P1: ");
-    display.print(pot1Val);
+    display.print(pot1.getValue());
 
     // ----- Line 5 -----
     display.setCursor(0, 38);
     display.print("P2: ");
-    display.print(pot2Val);
+    display.print(pot2.getValue());
 
     display.display();
   }

@@ -31,11 +31,6 @@ public:
   // Connection status
   bool isConnected() const;
 
-  // For OLED/debug
-  const char* getLastSent() const;
-  const char* getLastReceived() const;
-  uint16_t getSendCounter() const;
-
 private:
   // --- RF24 driver ---
   RF24 _radio; // 
