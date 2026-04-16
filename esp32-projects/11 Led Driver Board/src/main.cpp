@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <FastLED.h>
 #include "Animations.h"
 
 #define DATA_PIN   25
@@ -12,6 +13,11 @@
 #define SCREEN_HEIGHT 64
 #define OLED_RESET   -1
 #define SCREEN_ADDR  0x3C
+
+// RGB strip
+#define RGB_PIN   26
+#define NUM_LEDS  10   // change this later
+CRGB leds[NUM_LEDS];
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -38,37 +44,6 @@ void showAnimationName(const char* name)
     display.display();
 }
 
-void showCountdown(const char* nextName, int secondsLeft)
-{
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
-
-    display.setCursor(0, 0);
-    display.println("Next Animation:");
-
-    display.setTextSize(2);
-    display.setCursor(0, 14);
-    display.println(nextName);
-
-    display.setTextSize(1);
-    display.setCursor(0, 48);
-    display.print("Starting in ");
-    display.print(secondsLeft);
-    display.println("s");
-
-    display.display();
-}
-
-void waitWithCountdown(const char* nextName, int totalSeconds)
-{
-    for (int i = totalSeconds; i > 0; i--)
-    {
-        showCountdown(nextName, i);
-        delay(1000);
-    }
-}
-
 void setup()
 {
     pinMode(DATA_PIN, OUTPUT);
@@ -83,6 +58,12 @@ void setup()
     {
         while (true) { }
     }
+
+    // RGB strip init
+    FastLED.addLeds<WS2812B, RGB_PIN, GRB>(leds, NUM_LEDS);
+    FastLED.clear();
+    FastLED.setBrightness(80);
+    FastLED.show();
 
     display.clearDisplay();
     display.setTextSize(2);
@@ -101,6 +82,14 @@ void loop()
     {
         showAnimationName("Fill Sweep");
         animFillSweepSix(writeRegister);
+
+        // turn on RGB strip after white animation finishes
+        for (int i = 0; i < NUM_LEDS; i++)
+        {
+            leds[i] = CRGB::Blue;
+        }
+        FastLED.show();
+
         ranOnce = true;
     }
 }
