@@ -1,4 +1,7 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #include "Animations.h"
 
 // ============================================================
@@ -10,6 +13,18 @@
 #define SER_DATA  25
 #define SER_CLK   32
 #define SER_LATCH 33
+
+// --------- Pin Definitions for OLED Screen ----------
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+#define OLED_I2C_ADDRESS 0x3C
+
+#define SDA_PIN 21
+#define SCL_PIN 22
+
+// Create Display Object
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // ============================================================
 // SETTINGS — the only lines you ever change
@@ -23,25 +38,16 @@
 //
 // specificAnimation:
 //   index into animations[]
-//    0  Chase
-//    1  Chase Reverse
-//    2  Ping Pong
-//    3  Scanner
-//    4  Blink All
-//    5  Alternating
-//    6  Fill Bar
-//    7  Empty Bar
-//    8  Center Out
-//    9  Outside In
-//   10  Comet Fill
-//   11  Comet Fill Rev
-//   12  Dual Fill In
-//   13  Dual Fill Out
+//    0  Effect A
+//    1  Effect B
+//    2  Effect C
+//    3  Effect D
+//    4  Effect E
 // ============================================================
 const int  LED_COUNT          = 6;
-const int  ANIM_SPEED         = 80;
+const int  ANIM_SPEED         = 100;
 const Mode currentMode        = MODE_CYCLE;
-const int  specificAnimation  = 0;
+const int  specificAnimation  = 2;
 
 
 // ============================================================
@@ -56,6 +62,37 @@ void writeRegister(uint8_t value)
     digitalWrite(SER_LATCH, HIGH);
 }
 
+// ============================================================
+// updateDisplay
+// Shows the current animation name on the OLED.
+// ============================================================
+void updateDisplay(const char* animName)
+{
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+
+    display.println("Headlights");
+    display.println();
+
+    display.print("Mode: ");
+    if (currentMode == MODE_SPECIFIC)
+        display.println("Specific");
+    else
+        display.println("Cycle");
+
+    display.print("Anim: ");
+    display.println(animName);
+
+    display.print("LEDs: ");
+    display.println(LED_COUNT);
+
+    display.print("Speed: ");
+    display.println(ANIM_SPEED);
+
+    display.display();
+}
 
 // ============================================================
 // setup
@@ -71,6 +108,23 @@ void setup()
     pinMode(SER_LATCH, OUTPUT);
 
     writeRegister(0x00);
+
+    // Oled Screen Initialization
+    Wire.begin(SDA_PIN, SCL_PIN);
+    if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDRESS))
+    {
+        while (true) delay(1000);
+    }
+
+    display.clearDisplay();
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.println("Headlight Tester");
+    display.println("Loading...");
+    display.display();
+
+    delay(2000);
 }
 
 
@@ -82,6 +136,7 @@ void loop()
     switch (currentMode)
     {
         case MODE_SPECIFIC:
+            updateDisplay(animations[specificAnimation].name);
             animations[specificAnimation].func(writeRegister, LED_COUNT, ANIM_SPEED);
             delay(500);
             break;
@@ -89,6 +144,7 @@ void loop()
         case MODE_CYCLE:
             for (int i = 0; i < animationCount; i++)
             {
+                updateDisplay(animations[i].name);
                 animations[i].func(writeRegister, LED_COUNT, ANIM_SPEED);
                 delay(500);
             }
