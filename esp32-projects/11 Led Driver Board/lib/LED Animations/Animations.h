@@ -10,7 +10,7 @@
 enum Mode
 {
     MODE_SPECIFIC,
-    MODE_CYCLE
+    MODE_CYCLE,
 };
 
 // ============================================================
@@ -43,6 +43,7 @@ void effectB(void (*writeRegister)(uint8_t), int ledCount, int stepDelay);
 void effectC(void (*writeRegister)(uint8_t), int ledCount, int stepDelay);
 void effectD(void (*writeRegister)(uint8_t), int ledCount, int stepDelay);
 void effectE(void (*writeRegister)(uint8_t), int ledCount, int stepDelay);
+void effectF(void (*writeRegister)(uint8_t), int ledCount, int stepDelay);
 
 // ============================================================
 // Animation registry

@@ -2,7 +2,9 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <FastLED.h>
 #include "Animations.h"
+#include "POT.h"
 
 // ============================================================
 // Pin definitions
@@ -23,8 +25,19 @@
 #define SDA_PIN 21
 #define SCL_PIN 22
 
-// Create Display Object
+// --------- Pin Definitions for RGB Strip ----------
+#define RGB_PIN 26
+#define NUM_RGB 8
+#define RGB_BRIGHTNESS 120
+
+// --------- Potentiometer ----------
+#define POT_PIN 27
+
+// --------- Toggle Switch ----------
+#define TOGGLE_PIN 14
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+CRGB leds[NUM_RGB];
+Potentiometer rgbPot(POT_PIN, "RGB Pot");
 
 // ============================================================
 // SETTINGS — the only lines you ever change
@@ -95,6 +108,19 @@ void updateDisplay(const char* animName)
     display.display();
 }
 
+
+void updateRGBfromPot()
+{
+    rgbPot.update();
+
+    uint16_t potValue = rgbPot.getValue();          // 0 to 4095 on ESP32
+    uint8_t hue = map(potValue, 0, 4095, 0, 255);  // map to HSV hue range
+
+    fill_solid(leds, NUM_RGB, CHSV(hue, 255, RGB_BRIGHTNESS));
+    FastLED.show();
+}
+
+
 // ============================================================
 // setup
 // ============================================================
@@ -109,6 +135,15 @@ void setup()
     pinMode(SER_LATCH, OUTPUT);
 
     writeRegister(0x00); // Sets all LEDs to LOW
+
+
+    // RGB Strip Initialization
+    FastLED.addLeds<WS2812, RGB_PIN, GRB>(leds, NUM_RGB);
+    FastLED.clear();
+    FastLED.show();
+    analogReadResolution(12);
+
+    rgbPot.begin();
 
     // Oled Screen Initialization
     Wire.begin(SDA_PIN, SCL_PIN);
@@ -134,6 +169,8 @@ void setup()
 // ============================================================
 void loop()
 {
+    updateRGBfromPot();
+
     switch (currentMode)
     {
         case MODE_SPECIFIC:
@@ -145,6 +182,7 @@ void loop()
         case MODE_CYCLE:
             for (int i = 0; i < animationCount; i++)
             {
+                updateRGBfromPot();
                 updateDisplay(animations[i].name);
                 animations[i].func(writeRegister, LED_COUNT, ANIM_SPEED);
                 delay(500);
@@ -152,3 +190,4 @@ void loop()
             break;
     }
 }
+

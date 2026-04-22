@@ -182,6 +182,23 @@ void effectE(void (*writeRegister)(uint8_t), int ledCount, int stepDelay)
     }
 }
 
+void effectF(void (*writeRegister)(uint8_t), int ledCount, int stepDelay)
+{
+    clearAll(writeRegister);
+
+    for (int i = ledCount - 1; i >= 0; i--)
+    {
+        for (int k = 0; k < i; k++)
+        {
+            setLed(writeRegister, k, true);
+            delay(stepDelay);
+            setLed(writeRegister, k, false);
+        }
+
+        setLed(writeRegister, i, true);
+    }
+}
+
 // ============================================================
 // Animation registry
 // Names here are what will show on the OLED
@@ -192,7 +209,8 @@ AnimationEntry animations[] =
     { "Effect B", effectB },
     { "Effect C", effectC },
     { "Effect D", effectD },
-    { "Effect E", effectE }
+    { "Effect E", effectE },
+    { "Effect F", effectF }
 };
 
 const int animationCount = sizeof(animations) / sizeof(animations[0]);
