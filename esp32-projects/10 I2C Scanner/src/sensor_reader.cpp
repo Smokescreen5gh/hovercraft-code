@@ -3,42 +3,61 @@
 
 static const uint8_t SENSOR_ADDR = 0x28;
 
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
+// L04D: ±4 inH2O differential, 10-90% transfer function
+const float OFFSET_COUNTS      = 8192.0f;
+const float FULL_SCALE_COUNTS  = 13108.0f;
+const float PRESSURE_RANGE_PA  = 1990.6f;
 
-  Wire.begin(21, 22);
-  Serial.println("\nELVH raw read test");
-}
+bool readSensor(uint16_t &counts, uint8_t &status)
+{
+    Wire.requestFrom(SENSOR_ADDR, (uint8_t)4);
 
-void loop() {
-  Wire.requestFrom(SENSOR_ADDR, (uint8_t)4);
+    if (Wire.available() != 4) return false;
 
-  if (Wire.available() == 4) {
     uint8_t b1 = Wire.read();
     uint8_t b2 = Wire.read();
-    uint8_t b3 = Wire.read();
-    uint8_t b4 = Wire.read();
+    Wire.read(); // temp, ignored for now
+    Wire.read(); // temp, ignored for now
 
-    uint8_t status = (b1 >> 6) & 0x03;
-    uint16_t pressureCounts = ((uint16_t)(b1 & 0x3F) << 8) | b2;
-    uint16_t tempCounts = ((uint16_t)b3 << 3) | (b4 >> 5);
+    status = (b1 >> 6) & 0x03;
+    counts = ((uint16_t)(b1 & 0x3F) << 8) | b2;
 
-    Serial.print("Bytes: ");
-    Serial.print(b1); Serial.print(" ");
-    Serial.print(b2); Serial.print(" ");
-    Serial.print(b3); Serial.print(" ");
-    Serial.println(b4);
+    return true;
+}
 
-    Serial.print("Status: ");
-    Serial.print(status);
-    Serial.print(" | Pressure Counts: ");
-    Serial.print(pressureCounts);
-    Serial.print(" | Temp Counts: ");
-    Serial.println(tempCounts);
-  } else {
-    Serial.println("Read failed");
-  }
+float countsToPressurePa(uint16_t counts)
+{
+    return ((float)counts - OFFSET_COUNTS) / FULL_SCALE_COUNTS * PRESSURE_RANGE_PA;
+}
 
-  delay(1000);
+void setup()
+{
+    Serial.begin(115200);
+    delay(1000);
+    Wire.begin(21, 22);
+    Serial.println("\nELVH debug test");
+    Serial.println("counts | delta_from_8192 | pressure_Pa | status");
+}
+
+void loop()
+{
+    uint16_t counts = 0;
+    uint8_t  status = 0;
+
+    if (readSensor(counts, status)) {
+        float pressure = countsToPressurePa(counts);
+
+        Serial.print("counts=");
+        Serial.print(counts);
+        Serial.print(" | delta=");
+        Serial.print((int)counts - 8192);
+        Serial.print(" | pressure=");
+        Serial.print(pressure, 2);
+        Serial.print(" Pa | status=");
+        Serial.println(status);
+    } else {
+        Serial.println("READ FAIL - check wiring");
+    }
+
+    delay(500);
 }
