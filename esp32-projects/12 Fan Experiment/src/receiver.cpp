@@ -128,12 +128,20 @@ void loop() {
     lastTelemetryMs = millis();
 
     RadioPayload out{};
+
     out.type = PacketType::TELEMETRY;
+
     out.potRaw = potRx;
     out.throttleUs = throttleUs;
+
     out.staticPa = fanTester.getStaticPressurePa();
     out.venturiPa = fanTester.getVenturiPressurePa();
-    out.cfm = fanTester.getCFM();
+
+    out.flowM3s = fanTester.getFlowM3s();
+
+    out.v1 = fanTester.getV1();
+    out.v2 = fanTester.getV2();
+
     out.motorState = motor.getState();
 
     radio.sendPackage(out);

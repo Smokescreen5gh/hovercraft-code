@@ -8,21 +8,23 @@ enum class PacketType : uint8_t {
 };
 
 struct RadioPayload {
+
   PacketType type;
   uint16_t counter;
 
-  // Board 1 -> Board 2
+  // TX → RX (controller → fan tester)
   uint16_t potRaw;
   uint16_t throttleUs;
 
-  // Board 2 -> Board 1
+  // RX → TX (fan tester → controller)
   float staticPa;
   float venturiPa;
-  float cfm;
+  float flowM3s;
   float v1;
   float v2;
 
   char motorState;
 };
 
-static_assert(sizeof(RadioPayload) <= 32, "RadioPayload must be <= 32 bytes!");
+static_assert(sizeof(RadioPayload) <= 32,
+              "RadioPayload must be <= 32 bytes!");
