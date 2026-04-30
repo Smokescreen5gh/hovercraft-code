@@ -2,15 +2,25 @@
 
 #define SENSOR_ADDR 0x28
 
+// ELVH sensor transfer-function constants
 const float OFFSET_COUNTS     = 8192.0f;
 const float FULL_SCALE_COUNTS = 13108.0f;
 const float PRESSURE_RANGE_PA = 1990.6f;
 
-const float AIR_DENSITY     = 1.2f;
+// Air property
+const float AIR_DENSITY = 1.2f;  // kg/m^3
+
+// Chamber geometry: A1
+const float CHAMBER_WIDTH_M  = 0.2032f;  // 8 in
+const float CHAMBER_HEIGHT_M = 0.2032f;  // 8 in
+const float CHAMBER_AREA_M2  = CHAMBER_WIDTH_M * CHAMBER_HEIGHT_M;
+
+// Throat geometry: A2
 const float THROAT_WIDTH_M  = 0.1016f;  // 4 in
 const float THROAT_HEIGHT_M = 0.1016f;  // 4 in
 const float THROAT_AREA_M2  = THROAT_WIDTH_M * THROAT_HEIGHT_M;
 
+// Unit conversions
 const float M3S_TO_CFM = 2118.88f;
 const float M3S_TO_M3H = 3600.0f;
 
@@ -21,8 +31,11 @@ FanTester::FanTester(TwoWire& staticBus, TwoWire& venturiBus)
     _zeroOffsetVenturi(0.0f),
     _staticPa(0.0f),
     _venturiPa(0.0f),
+    _flowM3s(0.0f),
     _cfm(0.0f),
     _m3h(0.0f),
+    _v1(0.0f),
+    _v2(0.0f),
     _staticOK(false),
     _venturiOK(false)
 {
@@ -80,18 +93,35 @@ void FanTester::update() {
   uint8_t statusStatic = 0;
   uint8_t statusVenturi = 0;
 
+  // 1. Read both pressure sensors
   _staticOK = readSensor(_staticBus, countsStatic, statusStatic);
   _venturiOK = readSensor(_venturiBus, countsVenturi, statusVenturi);
 
+  // 2. Convert static sensor counts to chamber static pressure
   if (_staticOK) {
     _staticPa = countsToPressurePa(countsStatic, _zeroOffsetStatic);
   }
 
+  // 3. Convert venturi sensor counts to deltaP, then calculate flow and velocity
   if (_venturiOK) {
     _venturiPa = countsToPressurePa(countsVenturi, _zeroOffsetVenturi);
-    _cfm = pressureToFlowCFM(_venturiPa);
-    _m3h = pressureToFlowM3h(_venturiPa);
+
+    // deltaP = chamber pressure - throat pressure
+    // First solve for volumetric flow rate Q in m^3/s
+    _flowM3s = pressureToFlowM3s(_venturiPa);
+
+    // Then use continuity: Q = A1*v1 = A2*v2
+    _v1 = flowToV1(_flowM3s);
+    _v2 = flowToV2(_flowM3s);
+
+    // Convert Q into display/comparison units
+    _cfm = _flowM3s * M3S_TO_CFM;
+    _m3h = _flowM3s * M3S_TO_M3H;
   } else {
+    _venturiPa = 0.0f;
+    _flowM3s = 0.0f;
+    _v1 = 0.0f;
+    _v2 = 0.0f;
     _cfm = 0.0f;
     _m3h = 0.0f;
   }
@@ -106,10 +136,15 @@ bool FanTester::readSensor(TwoWire& bus, uint16_t& counts, uint8_t& status) {
 
   uint8_t b1 = bus.read();
   uint8_t b2 = bus.read();
+
+  // Temperature bytes are currently ignored
   bus.read();
   bus.read();
 
+  // Top 2 bits are sensor status
   status = (b1 >> 6) & 0x03;
+
+  // Lower 14 bits are pressure counts
   counts = ((uint16_t)(b1 & 0x3F) << 8) | b2;
 
   return true;
@@ -119,21 +154,29 @@ float FanTester::countsToPressurePa(uint16_t counts, float offset) {
   return ((float)counts - OFFSET_COUNTS) / FULL_SCALE_COUNTS * PRESSURE_RANGE_PA - offset;
 }
 
-float FanTester::pressureToVelocity(float deltaP) {
-  if (deltaP <= 1.0f) return 0.0f;
-  return sqrtf((2.0f * deltaP) / AIR_DENSITY);
-}
-
 float FanTester::pressureToFlowM3s(float deltaP) {
-  return THROAT_AREA_M2 * pressureToVelocity(deltaP);
+  if (deltaP <= 1.0f) {
+    return 0.0f;
+  }
+
+  // Full incompressible venturi equation:
+  // Q = A2 * sqrt( 2*deltaP / (rho * (1 - (A2/A1)^2)) )
+  float areaRatio = THROAT_AREA_M2 / CHAMBER_AREA_M2;
+  float correction = 1.0f - (areaRatio * areaRatio);
+
+  if (correction <= 0.0f) {
+    return 0.0f;
+  }
+
+  return THROAT_AREA_M2 * sqrtf((2.0f * deltaP) / (AIR_DENSITY * correction));
 }
 
-float FanTester::pressureToFlowCFM(float deltaP) {
-  return pressureToFlowM3s(deltaP) * M3S_TO_CFM;
+float FanTester::flowToV1(float flowM3s) {
+  return flowM3s / CHAMBER_AREA_M2;
 }
 
-float FanTester::pressureToFlowM3h(float deltaP) {
-  return pressureToFlowM3s(deltaP) * M3S_TO_M3H;
+float FanTester::flowToV2(float flowM3s) {
+  return flowM3s / THROAT_AREA_M2;
 }
 
 float FanTester::getStaticPressurePa() const {
@@ -144,12 +187,24 @@ float FanTester::getVenturiPressurePa() const {
   return _venturiPa;
 }
 
+float FanTester::getFlowM3s() const {
+  return _flowM3s;
+}
+
 float FanTester::getCFM() const {
   return _cfm;
 }
 
 float FanTester::getM3H() const {
   return _m3h;
+}
+
+float FanTester::getV1() const {
+  return _v1;
+}
+
+float FanTester::getV2() const {
+  return _v2;
 }
 
 bool FanTester::staticSensorOK() const {

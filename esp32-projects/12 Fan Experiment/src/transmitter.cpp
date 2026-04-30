@@ -40,6 +40,8 @@ static uint16_t throttleUs = 1000;
 static float rxStaticPa = 0.0f;
 static float rxVenturiPa = 0.0f;
 static float rxCFM = 0.0f;
+static float rxV1 = 0.0f;
+static float rxV2 = 0.0f;
 static char rxMotorState = 'D';
 
 void setup() {
@@ -78,6 +80,8 @@ void loop() {
     rxStaticPa = in.staticPa;
     rxVenturiPa = in.venturiPa;
     rxCFM = in.cfm;
+    rxV1 = in.v1;
+    rxV2 = in.v2;
     rxMotorState = in.motorState;
     throttleUs = in.throttleUs;
   }
@@ -104,14 +108,29 @@ void loop() {
 
     Serial.print("Pot: ");
     Serial.print(potRaw);
+
     Serial.print(" | Throttle: ");
     Serial.print(throttleUs);
+
     Serial.print(" | Static: ");
     Serial.print(rxStaticPa, 1);
-    Serial.print(" Pa | Venturi: ");
+    Serial.print(" Pa");
+
+    Serial.print(" | dP: ");
     Serial.print(rxVenturiPa, 1);
-    Serial.print(" Pa | CFM: ");
+    Serial.print(" Pa");
+
+    Serial.print(" | V1: ");
+    Serial.print(rxV1, 2);
+    Serial.print(" m/s");
+
+    Serial.print(" | V2: ");
+    Serial.print(rxV2, 2);
+    Serial.print(" m/s");
+
+    Serial.print(" | CFM: ");
     Serial.print(rxCFM, 1);
+
     Serial.print(" | Motor: ");
     Serial.println(rxMotorState);
   }
@@ -125,28 +144,32 @@ void loop() {
     display.setTextColor(SSD1306_WHITE);
 
     display.setCursor(0, 0);
-    display.print("NRF Module TX");
+    display.print("NRF TX ");
+    display.print(radio.isConnected() ? "CON" : "DISC");
 
     display.setCursor(0, 9);
-    display.print(radio.isConnected() ? "Connected" : "Disconnected");
-
-    display.setCursor(0, 18);
     display.print("SA:");
     display.write((const char*)RADIO_TX_ADDR, 5);
     display.print(" RA:");
     display.write((const char*)RADIO_RX_ADDR, 5);
 
-    display.setCursor(0, 28);
+    display.setCursor(0, 18);
     display.print("Pot:");
     display.print(potRaw);
     display.print(" PWM:");
     display.print(throttleUs);
 
-    display.setCursor(0, 38);
+    display.setCursor(0, 28);
     display.print("S:");
-    display.print(rxStaticPa, 1);
-    display.print(" V:");
-    display.print(rxVenturiPa, 1);
+    display.print(rxStaticPa, 0);
+    display.print(" dP:");
+    display.print(rxVenturiPa, 0);
+
+    display.setCursor(0, 38);
+    display.print("V1:");
+    display.print(rxV1, 1);
+    display.print(" V2:");
+    display.print(rxV2, 1);
 
     display.setCursor(0, 48);
     display.print("CFM:");

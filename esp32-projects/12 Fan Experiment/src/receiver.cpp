@@ -44,7 +44,7 @@ TwoWire I2C_2 = TwoWire(1);
 // ------------ Create the Objects ---------------//
 //------------------------------------------------//
 
-//Create Radio Object
+// Create Radio Object
 NrfRadio radio(PIN_CE, PIN_CSN, RADIO_RX_ADDR, RADIO_TX_ADDR, 2);
 
 // Create the Display Object
@@ -53,7 +53,9 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 // Create the motor object
 BLDC motor(MOTOR_PIN, "M1", 1000, 2000);
 
-// Need Help
+// Create FanTester object
+// Wire  = static pressure sensor bus
+// I2C_2 = venturi pressure sensor bus
 FanTester fanTester(Wire, I2C_2);
 
 static uint16_t potRx = 0;
@@ -116,6 +118,8 @@ void loop() {
   static uint32_t lastSensorMs = 0;
   if (millis() - lastSensorMs >= 50) {
     lastSensorMs = millis();
+
+    // Update pressure, velocity, and flow calculations
     fanTester.update();
   }
 
@@ -141,14 +145,40 @@ void loop() {
 
     Serial.print("PotRX: ");
     Serial.print(potRx);
+
     Serial.print(" | PWM: ");
     Serial.print(throttleUs);
+
     Serial.print(" | Static: ");
     Serial.print(fanTester.getStaticPressurePa(), 1);
-    Serial.print(" Pa | Venturi: ");
+    Serial.print(" Pa");
+
+    Serial.print(" | dP: ");
     Serial.print(fanTester.getVenturiPressurePa(), 1);
-    Serial.print(" Pa | CFM: ");
+    Serial.print(" Pa");
+
+    Serial.print(" | V1: ");
+    Serial.print(fanTester.getV1(), 2);
+    Serial.print(" m/s");
+
+    Serial.print(" | V2: ");
+    Serial.print(fanTester.getV2(), 2);
+    Serial.print(" m/s");
+
+    Serial.print(" | Flow: ");
     Serial.print(fanTester.getCFM(), 1);
+    Serial.print(" CFM");
+
+    Serial.print(" | ");
+    Serial.print(fanTester.getM3H(), 1);
+    Serial.print(" m3/h");
+
+    Serial.print(" | S_OK:");
+    Serial.print(fanTester.staticSensorOK() ? "Y" : "N");
+
+    Serial.print(" | V_OK:");
+    Serial.print(fanTester.venturiSensorOK() ? "Y" : "N");
+
     Serial.print(" | Motor: ");
     Serial.println(motor.getState());
   }
@@ -162,32 +192,42 @@ void loop() {
     display.setTextColor(SSD1306_WHITE);
 
     display.setCursor(0, 0);
-    display.print("NRF Module RX");
+    display.print("NRF RX ");
+    display.print(radio.isConnected() ? "CON" : "DISC");
 
     display.setCursor(0, 9);
-    display.print(radio.isConnected() ? "Connected" : "Disconnected");
-
-    display.setCursor(0, 18);
     display.print("SA:");
     display.write((const char*)RADIO_TX_ADDR, 5);
     display.print(" RA:");
     display.write((const char*)RADIO_RX_ADDR, 5);
 
-    display.setCursor(0, 28);
+    display.setCursor(0, 18);
     display.print("PWM:");
     display.print(motor.getThrottle());
     display.print(" M:");
     display.print(motor.getState());
 
-    display.setCursor(0, 38);
+    display.setCursor(0, 28);
     display.print("S:");
-    display.print(fanTester.getStaticPressurePa(), 1);
-    display.print(" V:");
-    display.print(fanTester.getVenturiPressurePa(), 1);
+    display.print(fanTester.getStaticPressurePa(), 0);
+    display.print(" dP:");
+    display.print(fanTester.getVenturiPressurePa(), 0);
+
+    display.setCursor(0, 38);
+    display.print("V1:");
+    display.print(fanTester.getV1(), 1);
+    display.print(" V2:");
+    display.print(fanTester.getV2(), 1);
 
     display.setCursor(0, 48);
     display.print("CFM:");
     display.print(fanTester.getCFM(), 1);
+
+    display.setCursor(0, 57);
+    display.print("S:");
+    display.print(fanTester.staticSensorOK() ? "Y" : "N");
+    display.print(" V:");
+    display.print(fanTester.venturiSensorOK() ? "Y" : "N");
 
     display.display();
   }

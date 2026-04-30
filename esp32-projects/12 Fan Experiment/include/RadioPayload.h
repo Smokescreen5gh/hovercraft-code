@@ -19,6 +19,8 @@ struct RadioPayload {
   float staticPa;
   float venturiPa;
   float cfm;
+  float v1;
+  float v2;
 
   char motorState;
 };
