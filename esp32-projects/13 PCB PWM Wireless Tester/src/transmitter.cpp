@@ -32,11 +32,11 @@ static const uint8_t RADIO_TX_ADDR[6] = "00002";
 
 
 // --------- Pin Definitions for Potentiometers ----------
-#define POT1_PIN 14
-#define POT2_PIN 27
+#define POT1_PIN 33
+#define POT2_PIN 25
 #define POT3_PIN 26
-#define POT4_PIN 25
-#define POT5_PIN 33
+#define POT4_PIN 27
+#define POT5_PIN 14
 
 
 
@@ -135,7 +135,7 @@ void loop() {
     radio.sendPackage(out);
   }
 
-  // Display on OLED Screen
+// 5) Display on OLED Screen
   static uint32_t lastOledMs = 0;
 
   if (millis() - lastOledMs >= 100) {
@@ -145,39 +145,59 @@ void loop() {
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
 
-    // ----- Line 1 -----
+    // Line 1
     display.setCursor(0, 0);
-    display.print("NRF Module Transmitter");
+    display.print("NRF TX: ");
+    display.print(radio.isConnected() ? "CON" : "DIS");
 
-    // ----- Line 2 -----
-    display.setCursor(0, 9);
-    display.print(radio.isConnected() ? "Connected" : "Disconnected");
-
-    // ----- Line 3 -----
-    display.setCursor(0, 18);
+    // Line 2
+    display.setCursor(0, 10);
     display.print("SA:");
     display.write((const char*)RADIO_TX_ADDR, 5);
-    display.print(" RA:");
+
+    display.setCursor(60, 10);
+    display.print("RA:");
     display.write((const char*)RADIO_RX_ADDR, 5);
 
-    // ----- Line 4 -----
-    display.setCursor(0, 28);
-    display.print("M1:");
-    display.print(pot1.getValue());
-    display.print(" ");
-
-    display.setCursor(50, 28);
+    // Line 3
+    display.setCursor(0, 22);
+    display.print("P1:");
+    display.setCursor(18, 22);
+    display.printf("%4d", pot1.getValue());
+    display.setCursor(44, 22);
     display.print(motor1State);
 
-    // ----- Line 5 -----
-    display.setCursor(0, 38);
-    display.print("M2:");
-    display.print(pot2.getValue());
-    display.print(" ");
-
-    display.setCursor(50, 38);
+    display.setCursor(64, 22);
+    display.print("P2:");
+    display.setCursor(82, 22);
+    display.printf("%4d", pot2.getValue());
+    display.setCursor(108, 22);
     display.print(motor2State);
+
+    // Line 4
+    display.setCursor(0, 34);
+    display.print("P3:");
+    display.setCursor(18, 34);
+    display.printf("%4d", pot3.getValue());
+    display.setCursor(44, 34);
+    display.print(motor3State);
+
+    display.setCursor(64, 34);
+    display.print("P4:");
+    display.setCursor(82, 34);
+    display.printf("%4d", pot4.getValue());
+    display.setCursor(108, 34);
+    display.print(motor4State);
+
+    // Line 5
+    display.setCursor(0, 46);
+    display.print("P5:");
+    display.setCursor(18, 46);
+    display.printf("%4d", pot5.getValue());
+    display.setCursor(44, 46);
+    display.print(motor5State);
 
     display.display();
   }
+
 }

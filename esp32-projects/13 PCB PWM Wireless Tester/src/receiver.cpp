@@ -18,8 +18,8 @@
 #define PIN_SCK   18
 #define PIN_MISO  19
 #define PIN_MOSI  23
-#define PIN_CSN   5
-#define PIN_CE    17
+#define PIN_CSN   17
+#define PIN_CE    5
 
 // --------- Pin Definitions for OLED Screen ----------
 #define SCREEN_WIDTH 128
@@ -166,7 +166,8 @@ void loop() {
     radio.sendPackage(out);
   }
 
-  // --------------------- Display on OLED Screen ------------------------
+// 5) --------------------- Display on OLED Screen ------------------------
+// Display on OLED Screen
   static uint32_t lastOledMs = 0;
 
   if (millis() - lastOledMs >= 100) {
@@ -176,42 +177,58 @@ void loop() {
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
 
-    // ----- Line 1 -----
+    // Line 1
     display.setCursor(0, 0);
-    display.print("NRF Module Rec");
+    display.print("NRF RX: ");
+    display.print(radio.isConnected() ? "CON" : "DIS");
 
-    // ----- Line 2 -----
-    display.setCursor(0, 9);
-    display.print(radio.isConnected() ? "Connected" : "Disconnected");
-
-    // ----- Line 3 -----
-    display.setCursor(0, 18);
+    // Line 2
+    display.setCursor(0, 10);
     display.print("SA:");
     display.write((const char*)RADIO_TX_ADDR, 5);
-    display.print(" RA:");
+
+    display.setCursor(60, 10);
+    display.print("RA:");
     display.write((const char*)RADIO_RX_ADDR, 5);
 
-    // ----- Line 4 -----
-    display.setCursor(0, 28);
-    display.print(motor1.name);
-    display.print(":");
-    display.print(motor1.getThrottle());
-    display.print(" ");
-
-    display.setCursor(50, 28);
+    // Line 3
+    display.setCursor(0, 22);
+    display.print("M1:");
+    display.setCursor(18, 22);
+    display.printf("%4d", motor1.getThrottle());
+    display.setCursor(44, 22);
     display.print(motor1.getState());
 
-    // ----- Line 4 -----
-    display.setCursor(0, 38);
-    display.print(motor2.name);
-    display.print(":");
-    display.print(motor2.getThrottle());
-    display.print(" ");
-
-    display.setCursor(50, 38);
+    display.setCursor(64, 22);
+    display.print("M2:");
+    display.setCursor(82, 22);
+    display.printf("%4d", motor2.getThrottle());
+    display.setCursor(108, 22);
     display.print(motor2.getState());
 
-    
+    // Line 4
+    display.setCursor(0, 34);
+    display.print("M3:");
+    display.setCursor(18, 34);
+    display.printf("%4d", motor3.getThrottle());
+    display.setCursor(44, 34);
+    display.print(motor3.getState());
+
+    display.setCursor(64, 34);
+    display.print("M4:");
+    display.setCursor(82, 34);
+    display.printf("%4d", motor4.getThrottle());
+    display.setCursor(108, 34);
+    display.print(motor4.getState());
+
+    // Line 5
+    display.setCursor(0, 46);
+    display.print("M5:");
+    display.setCursor(18, 46);
+    display.printf("%4d", motor5.getThrottle());
+    display.setCursor(44, 46);
+    display.print(motor5.getState());
+
     display.display();
   }
 }
