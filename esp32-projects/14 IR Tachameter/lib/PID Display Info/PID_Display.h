@@ -9,14 +9,14 @@ public:
     PID_Display(DisplayManager& displayManager);
 
     void update(bool SystemEnabled,
-                float SetPoint,
-                float rpmFiltered,
-                float error,
-                float kp,
-                float ki,
-                float kd,
-                int throttle,
-                char state);
+                    float SetPoint,
+                    float rpmFiltered,
+                    float error,
+                    int throttle,
+                    float kp,
+                    float ki,
+                    float kd,
+                    char state);
 
 private:
     DisplayManager& _displayManager;
