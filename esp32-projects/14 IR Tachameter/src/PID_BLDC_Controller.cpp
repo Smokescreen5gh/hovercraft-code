@@ -24,10 +24,14 @@ unsigned long armStartMs = 0;
 float setpoint = 3000;
 
 // --- PID Parameters ---
-float kp = 0;
-float ki = 0;
-float kd = 0; 
+float kp = 0.24;
+float ki = 0.05;
+float kd = 0.099; 
 
+// --- Slew Limit ---
+#define MAX_THROTTLE_STEP_US 5
+
+// Spin up params
 bool spinupDone = false;
 unsigned long spinupStartMs = 0;
 
@@ -62,6 +66,13 @@ BLDC motor1(motor_1, "M1", 1000, 2000);
 #define IR_Pin 27
 Tachometer tach1(IR_Pin,1);
 
+void logEvent(const char* event) {
+  Serial.print("#EVENT,");
+  Serial.print(millis());
+  Serial.print(",");
+  Serial.println(event);
+}
+
 // --------- Serial Command Function --------
 void checkSerialCommand() {
   if (Serial.available()) {
@@ -81,6 +92,7 @@ void checkSerialCommand() {
       motor1.setThrottle(1000);
 
       Serial.println("SYSTEM STARTED - ARMING ESC");
+      logEvent("SYSTEM_START");
     }
 
     else if (cmd == "x") {
@@ -94,6 +106,7 @@ void checkSerialCommand() {
       motor1.disable();
 
       Serial.println("SYSTEM STOPPED");
+      logEvent("SYSTEM_STOP");
     }
 
     else if (cmd.startsWith("sp ")) {
@@ -122,6 +135,9 @@ void checkSerialCommand() {
   }
 }
 
+
+
+
 void setup() {
       Serial.begin(115200);
       delay(200);
@@ -140,6 +156,14 @@ void setup() {
 
       prevT = micros();
       Serial.println("Type s to START, x to STOP");
+
+      Serial.println("#CSV,millis,state,rpm,setpoint,throttle,error,kp,ki,kd");
+}
+
+int slewLimit(int currentValue, int targetValue, int maxStep) {
+  if (targetValue > currentValue + maxStep) return currentValue + maxStep;
+  if (targetValue < currentValue - maxStep) return currentValue - maxStep;
+  return targetValue;
 }
 
 void loop() {
@@ -151,7 +175,7 @@ void loop() {
       TachData data = tach1.measure();
       rpm = data.rpmFiltered;
 
-      int throttleUs = 1000;
+      static int throttleUs = 1000;
       float error = setpoint - rpm;
 
       // STOPPED MODE
@@ -179,6 +203,7 @@ void loop() {
                   motor1.enable();
 
                   Serial.println("ESC ARMED - SPINUP");
+                  logEvent("ARMED");
             }
       }
 
@@ -194,7 +219,7 @@ void loop() {
             if (nowMs - spinupStartMs >= SPINUP_TIME_MS) {
                   spinupDone = true;
                   prevT = micros();
-
+                  logEvent("SPINUP_DONE");
                   Serial.println("SPINUP DONE - PID ACTIVE");
             }
       }
@@ -215,8 +240,10 @@ void loop() {
             ki * eintegral +
             kd * dedt;
 
-            throttleUs = 1150 + pidOutput;
-            throttleUs = constrain(throttleUs, 1000, 2000);
+            int desiredThrottle = 1150 + pidOutput;
+            desiredThrottle = constrain(desiredThrottle, 1000, 2000);
+
+            throttleUs = slewLimit(throttleUs, desiredThrottle, MAX_THROTTLE_STEP_US);
 
             motor1.setThrottle(throttleUs);
 
@@ -253,6 +280,19 @@ void loop() {
       Serial.print(kd);
       Serial.print(" | State: ");
       Serial.println(motor1.getState());
+      
+      /*
+      Serial.print("#CSV,");
+      Serial.print(millis());        Serial.print(",");
+      Serial.print(motor1.getState()); Serial.print(",");
+      Serial.print(rpm);             Serial.print(",");
+      Serial.print(setpoint);        Serial.print(",");
+      Serial.print(throttleUs);      Serial.print(",");
+      Serial.print(error);           Serial.print(",");
+      Serial.print(kp);              Serial.print(",");
+      Serial.print(ki);              Serial.print(",");
+      Serial.println(kd);
+      */
 
       // ----- Teleplot -----
       Serial.print(">rpm:");
