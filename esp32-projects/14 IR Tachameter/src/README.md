@@ -1,3 +1,19 @@
+V2 6/20/2026
+
+Updates:
+
+    - PID Gains found for 3000 rpm
+
+    - Will need to test for other RPMS 
+
+    - Has a built in function to run a python logger to log PWM data across run time for plotting. Function is commented out for now but can be used when needed
+Issues:
+
+    - Tachometer does not work with a power supply. Will resort to using a lipo battery 
+    
+    - Need to test PID for other RPMs
+
+
 V1 6/14/2026
 
 Updates:
