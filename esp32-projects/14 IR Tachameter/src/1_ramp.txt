@@ -1,4 +1,4 @@
-// No ramp
+// with ramped stuff
 #include <Arduino.h>
 #include <ESP32Servo.h>
 
@@ -23,6 +23,8 @@ unsigned long armStartMs = 0;
 
 // --- Set Point --------
 float setpoint = 3000;
+float rampedSetpoint = 0;
+#define SETPOINT_RAMP_RPM_PER_S 300   // spin-up rate — your supply-friendliness knob
 
 // --- PID Parameters ---
 float kp = 0.24;
@@ -38,14 +40,6 @@ unsigned long spinupStartMs = 0;
 
 #define SPINUP_TIME_MS 5000
 #define SPINUP_THROTTLE_US 1150
-
-
-// Throttle Lock
-unsigned long throttleLockTime = 0;  // Time when error first went within tolerance
-bool throttleLocked = false;         // Whether throttle is currently locked
-int lockedThrottle = 1150;           // The throttle value to lock to
-const int LOCK_ERROR_TOLERANCE = 10; // RPM
-const unsigned long LOCK_SETTLE_TIME_MS = 5000;  // 5 seconds
 
 /*
  --------------------------------------------------------------
@@ -144,6 +138,9 @@ void checkSerialCommand() {
   }
 }
 
+
+
+
 void setup() {
       Serial.begin(115200);
       delay(200);
@@ -225,6 +222,7 @@ void loop() {
             if (nowMs - spinupStartMs >= SPINUP_TIME_MS) {
                   spinupDone = true;
                   prevT = micros();
+                  rampedSetpoint = rpm;        // <-- ADD: start ramp from current speed
                   logEvent("SPINUP_DONE");
                   Serial.println("SPINUP DONE - PID ACTIVE");
             }
@@ -236,24 +234,27 @@ void loop() {
             float deltaT = (currT - prevT) / 1000000.0;
             prevT = currT;
 
-            float dedt = (error - eprev) / deltaT;
+            // advance ramped setpoint toward the real setpoint
+            float maxStep = SETPOINT_RAMP_RPM_PER_S * deltaT;
+            if (rampedSetpoint < setpoint - maxStep)      rampedSetpoint += maxStep;
+            else if (rampedSetpoint > setpoint + maxStep) rampedSetpoint -= maxStep;
+            else                                          rampedSetpoint = setpoint;
 
-            eintegral = eintegral + error * deltaT;
+            float rampError = rampedSetpoint - rpm;   // PID chases the ramp
+
+            float dedt = (rampError - eprev) / deltaT;
+            eintegral = eintegral + rampError * deltaT;
             eintegral = constrain(eintegral, -15000, 15000);
 
-            float pidOutput =
-            kp * error +
-            ki * eintegral +
-            kd * dedt;
+            float pidOutput = kp * rampError + ki * eintegral + kd * dedt;
 
             int desiredThrottle = 1150 + pidOutput;
             desiredThrottle = constrain(desiredThrottle, 1000, 2000);
 
             throttleUs = slewLimit(throttleUs, desiredThrottle, MAX_THROTTLE_STEP_US);
-
             motor1.setThrottle(throttleUs);
 
-            eprev = error;
+            eprev = rampError;
       }
 
       // Serial Print
@@ -266,10 +267,12 @@ void loop() {
       Serial.print(spinupDone ? "DONE" : "NO");
       Serial.print(" | Setpoint: ");
       Serial.print(setpoint);
+      Serial.print(" | RampedSP: ");
+      Serial.print(rampedSetpoint, 0);   // Add this so you can see the ramp working
       Serial.print(" | RPM: ");
       Serial.print(rpm);
-      Serial.print(" | Error: ");
-      Serial.print(error);
+      Serial.print(" | Error (ramped): ");
+      Serial.print(rampedSetpoint - rpm);  // Show ramped error in PID mode
       Serial.print(" | Throttle: ");
       Serial.print(throttleUs);
       Serial.print(" | Accepted: ");
@@ -311,23 +314,23 @@ void loop() {
       Serial.println(throttleUs);
 
       Serial.print(">error:");
-      Serial.println(error);
+      Serial.println(rampedSetpoint - rpm);
 
       // -------------- Display OLED -----------
       if (nowMs - lastDisplayMs >= 200) {
             lastDisplayMs = nowMs;
 
             pidDisplay.update(
-                        systemEnabled,
-                        setpoint,
-                        rpm,
-                        error,
-                        throttleUs,
-                        kp,
-                        ki,
-                        kd,
-                        motor1.getState()
-                  );
+                  systemEnabled,
+                  setpoint,
+                  rpm,
+                  rampedSetpoint - rpm,  // Pass the ramped error to display
+                  throttleUs,
+                  kp,
+                  ki,
+                  kd,
+                  motor1.getState()
+            );
       }
 
       delay(50);

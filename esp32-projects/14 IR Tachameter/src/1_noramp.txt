@@ -1,3 +1,4 @@
+// No ramp
 #include <Arduino.h>
 #include <ESP32Servo.h>
 
@@ -22,8 +23,6 @@ unsigned long armStartMs = 0;
 
 // --- Set Point --------
 float setpoint = 3000;
-float rampedSetpoint = 0;
-#define SETPOINT_RAMP_RPM_PER_S 300   // spin-up rate — your supply-friendliness knob
 
 // --- PID Parameters ---
 float kp = 0.24;
@@ -31,14 +30,14 @@ float ki = 0.05;
 float kd = 0.099; 
 
 // --- Slew Limit ---
-#define MAX_THROTTLE_STEP_US 2
+#define MAX_THROTTLE_STEP_US 5
 
 // Spin up params
 bool spinupDone = false;
 unsigned long spinupStartMs = 0;
 
 #define SPINUP_TIME_MS 5000
-#define SPINUP_THROTTLE_US 1750
+#define SPINUP_THROTTLE_US 1150
 
 /*
  --------------------------------------------------------------
@@ -137,9 +136,6 @@ void checkSerialCommand() {
   }
 }
 
-
-
-
 void setup() {
       Serial.begin(115200);
       delay(200);
@@ -221,7 +217,6 @@ void loop() {
             if (nowMs - spinupStartMs >= SPINUP_TIME_MS) {
                   spinupDone = true;
                   prevT = micros();
-                  rampedSetpoint = rpm;        // <-- ADD: start ramp from current speed
                   logEvent("SPINUP_DONE");
                   Serial.println("SPINUP DONE - PID ACTIVE");
             }
@@ -233,27 +228,24 @@ void loop() {
             float deltaT = (currT - prevT) / 1000000.0;
             prevT = currT;
 
-            // advance ramped setpoint toward the real setpoint
-            float maxStep = SETPOINT_RAMP_RPM_PER_S * deltaT;
-            if (rampedSetpoint < setpoint - maxStep)      rampedSetpoint += maxStep;
-            else if (rampedSetpoint > setpoint + maxStep) rampedSetpoint -= maxStep;
-            else                                          rampedSetpoint = setpoint;
+            float dedt = (error - eprev) / deltaT;
 
-            float rampError = rampedSetpoint - rpm;   // PID chases the ramp
-
-            float dedt = (rampError - eprev) / deltaT;
-            eintegral = eintegral + rampError * deltaT;
+            eintegral = eintegral + error * deltaT;
             eintegral = constrain(eintegral, -15000, 15000);
 
-            float pidOutput = kp * rampError + ki * eintegral + kd * dedt;
+            float pidOutput =
+            kp * error +
+            ki * eintegral +
+            kd * dedt;
 
             int desiredThrottle = 1150 + pidOutput;
             desiredThrottle = constrain(desiredThrottle, 1000, 2000);
 
             throttleUs = slewLimit(throttleUs, desiredThrottle, MAX_THROTTLE_STEP_US);
+
             motor1.setThrottle(throttleUs);
 
-            eprev = rampError;
+            eprev = error;
       }
 
       // Serial Print
