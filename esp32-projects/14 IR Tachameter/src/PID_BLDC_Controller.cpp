@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-// No Ramp
-=======
 // No ramp
->>>>>>> main
 #include <Arduino.h>
 #include <ESP32Servo.h>
 
@@ -122,8 +118,12 @@ void checkSerialCommand() {
       logEvent("SYSTEM_STOP");
     }
 
-    else if (cmd.startsWith("sp ")) {
+   else if (cmd.startsWith("sp ")) {
       setpoint = cmd.substring(3).toFloat();
+      // RESET LOCK when setpoint changes
+      throttleLocked = false;
+      throttleLockTime = 0;
+      eintegral = 0;
       Serial.print("Setpoint = ");
       Serial.println(setpoint);
     }
@@ -145,6 +145,8 @@ void checkSerialCommand() {
       Serial.print("Kd = ");
       Serial.println(kd);
     }
+
+    
   }
 }
 
@@ -236,28 +238,56 @@ void loop() {
 
       // PID MODE
       else {
-            unsigned long currT = micros();
-            float deltaT = (currT - prevT) / 1000000.0;
-            prevT = currT;
+            // THROTTLE LOCK LOGIC (check first)
+            if (abs(error) <= LOCK_ERROR_TOLERANCE) {
+                  // Error is within tolerance
+                  if (throttleLockTime == 0) {
+                        // First time entering tolerance zone
+                        throttleLockTime = nowMs;
+                  }
+                  
+                  // Check if we've been in tolerance for long enough
+                  if (nowMs - throttleLockTime >= LOCK_SETTLE_TIME_MS) {
+                        throttleLocked = true;
+                        lockedThrottle = throttleUs;  // Lock current throttle value
+                        // IMPORTANT: Reset integral when locking to prevent drift
+                        eintegral = 0;
+                  }
+            } else {
+                  // Error went outside tolerance, unlock
+                  throttleLocked = false;
+                  throttleLockTime = 0;
+            }
 
-            float dedt = (error - eprev) / deltaT;
+            // Apply throttle (locked or controlled)
+            if (throttleLocked) {
+                  // Throttle is locked, send locked value
+                  motor1.setThrottle(lockedThrottle);
+            } else {
+                  // PID MODE - calculate and adjust throttle
+                  unsigned long currT = micros();
+                  float deltaT = (currT - prevT) / 1000000.0;
+                  prevT = currT;
 
-            eintegral = eintegral + error * deltaT;
-            eintegral = constrain(eintegral, -15000, 15000);
+                  float dedt = (error - eprev) / deltaT;
 
-            float pidOutput =
-            kp * error +
-            ki * eintegral +
-            kd * dedt;
+                  eintegral = eintegral + error * deltaT;
+                  eintegral = constrain(eintegral, -15000, 15000);
 
-            int desiredThrottle = 1150 + pidOutput;
-            desiredThrottle = constrain(desiredThrottle, 1000, 2000);
+                  float pidOutput =
+                  kp * error +
+                  ki * eintegral +
+                  kd * dedt;
 
-            throttleUs = slewLimit(throttleUs, desiredThrottle, MAX_THROTTLE_STEP_US);
+                  int desiredThrottle = 1150 + pidOutput;
+                  desiredThrottle = constrain(desiredThrottle, 1000, 2000);
 
-            motor1.setThrottle(throttleUs);
+                  throttleUs = slewLimit(throttleUs, desiredThrottle, MAX_THROTTLE_STEP_US);
 
-            eprev = error;
+                  motor1.setThrottle(throttleUs);
+
+                  eprev = error;
+            }
       }
 
       // Serial Print
@@ -275,13 +305,16 @@ void loop() {
       Serial.print(" | Error: ");
       Serial.print(error);
       Serial.print(" | Throttle: ");
-      Serial.print(throttleUs);
-      Serial.print(" | Accepted: ");
-      Serial.print(data.acceptedPulseCount);
-      Serial.print(" | OutlierReject: ");
-      Serial.print(data.rejectedOutlierCount);
-      Serial.print(" | FastReject: ");
-      Serial.print(data.rejectedFastPulseCount);
+      Serial.print(throttleLocked ? lockedThrottle : throttleUs);
+
+      Serial.print(" | Throttle Lock: ");
+      Serial.print(throttleLocked ? "LOCKED" : "ACTIVE");
+      if (!throttleLocked && throttleLockTime > 0) {
+            Serial.print(" (");
+            Serial.print(nowMs - throttleLockTime);
+            Serial.print("ms to lock)");
+      }
+
       Serial.print(" | Kp: ");
       Serial.print(kp);
       Serial.print(" | Ki: ");
@@ -291,6 +324,14 @@ void loop() {
       Serial.print(" | State: ");
       Serial.println(motor1.getState());
       
+      /*
+      Serial.print(" | Accepted: ");
+      Serial.print(data.acceptedPulseCount);
+      Serial.print(" | OutlierReject: ");
+      Serial.print(data.rejectedOutlierCount);
+      Serial.print(" | FastReject: ");
+      Serial.print(data.rejectedFastPulseCount); */
+    
       /*
       Serial.print("#CSV,");
       Serial.print(millis());        Serial.print(",");
@@ -312,7 +353,7 @@ void loop() {
       Serial.println(setpoint);
 
       Serial.print(">throttle:");
-      Serial.println(throttleUs);
+      Serial.println(throttleLocked ? lockedThrottle : throttleUs);
 
       Serial.print(">error:");
       Serial.println(error);
