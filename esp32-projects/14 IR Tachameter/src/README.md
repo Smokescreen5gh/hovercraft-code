@@ -9,6 +9,17 @@ Updates:
     - Changed the tachometer to sense rising edges instead of falling edges.
         - Refelective white tape was not working properly and had to switch to light color impellers and use black electrical tape. 
         - Tachometer senses when black tape is presenet 
+        - Changes are made in Tahcometer.cpp
+
+    - Made a new program called Manual control where i control the motor spin by giving it a set throttle value. Basically the user enters the throttle command in the serial monitor.
+        - Was almost about to give up on PID
+        - So thought what if I set the throttle value by the number instead of using a potentiometer
+        - Made the program where I can set throtlle to any value
+            - Was asssss like straight ass
+            - Motor wouldnt respond with slight rpm changes to slight throttle changes 
+              - When I changed the throttle slightly (ex 1400 - 1410) the motor spin wouldnt change
+              - If i change the throttle more, the motor would change its speed quite a bit instead of a little bit
+              - So scrapped this 
 
 V2 6/20/2026
 
