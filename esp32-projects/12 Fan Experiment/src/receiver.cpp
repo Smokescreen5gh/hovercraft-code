@@ -136,7 +136,28 @@ void loop() {
     radio.sendPackage(out);
   }
 
-  // ── Serial debug @ 4 Hz ───────────────────────────────────────────────────
+  // ── Serial debug @ 50 Hz (raw, unfiltered) ────────────────────────────────
+  static uint32_t lastSerialMs = 0;
+  if (millis() - lastSerialMs >= 20) {  // 50 Hz = 20ms intervals
+    lastSerialMs = millis();
+
+    Serial.print(millis());
+    Serial.print(",");
+    Serial.print(fanTester.getStaticPressurePa(), 2);
+    Serial.print(",");
+    Serial.print(fanTester.getStaticPaFiltered(), 2);
+    Serial.print(",");
+    Serial.print(fanTester.getVenturiPressurePa(), 2);
+    Serial.print(",");
+    Serial.print(fanTester.getVenturiPaFiltered(), 2);
+    Serial.print(",");
+    Serial.print(fanTester.getFlowM3s(), 4);
+    Serial.print(",");
+    Serial.print(motor.getThrottle());
+    Serial.println();
+  }
+
+  /* ── Serial debug @ 4 Hz ───────────────────────────────────────────────────
   static uint32_t lastSerialMs = 0;
   if (millis() - lastSerialMs >= 250) {
     lastSerialMs = millis();
@@ -151,7 +172,7 @@ void loop() {
     Serial.print(" | S_OK:");      Serial.print(fanTester.staticSensorOK()  ? "Y" : "N");
     Serial.print(" | V_OK:");      Serial.print(fanTester.venturiSensorOK() ? "Y" : "N");
     Serial.print(" | Motor: ");    Serial.println(motor.getState());
-  }
+  } */
 
   // ── OLED update @ 10 Hz ───────────────────────────────────────────────────
   static uint32_t lastOledMs = 0;

@@ -45,7 +45,7 @@ const float Cd = 0.97f;
 // Higher = faster but noisier              (0.3  → ~3  sample lag)
 // At 50ms update rate, ALPHA=0.1 gives roughly a 1-second smoothing window —
 // similar to the mechanical averaging of a handheld anemometer.
-const float EMA_ALPHA = 0.1f;
+const float EMA_ALPHA = 0.05f;
 
 // ─── Minimum deltaP threshold ────────────────────────────────────────────────
 // Below this value treat flow as zero to avoid noise near zero.

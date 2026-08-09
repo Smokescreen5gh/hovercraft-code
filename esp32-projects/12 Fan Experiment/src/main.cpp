@@ -72,6 +72,8 @@ void loop() {
   motor.setThrottle(throttleUs);
 
   static uint32_t lastSensorMs = 0;
+  static uint32_t dataPointCounter = 0;  // <- ADD THIS
+
   if (millis() - lastSensorMs >= 50) {
     lastSensorMs = millis();
     fanTester.update();
@@ -80,15 +82,50 @@ void loop() {
   static uint32_t lastSerialMs = 0;
   if (millis() - lastSerialMs >= 250) {
     lastSerialMs = millis();
+    dataPointCounter++;  // <- INCREMENT EACH OUTPUT
 
-    Serial.print("Pot: ");       Serial.print(potRaw);
+    Serial.print("Time: ");
+    Serial.print(millis());
+    Serial.print(" ms | ");
+    
+    Serial.print("Static: ");
+    Serial.print(fanTester.getStaticPaFiltered(), 2);
+    Serial.print(" Pa | ");
+    
+    Serial.print("Venturi: ");
+    Serial.print(fanTester.getVenturiPaFiltered(), 2);
+    Serial.print(" Pa | ");
+    
+    Serial.print("Flow: ");
+    Serial.print(fanTester.getFlowM3s(), 4);
+    Serial.print(" m³/s | ");
+    Serial.println();
+    
+    /*Serial.print("Throttle: ");
+    Serial.println(motor.getThrottle());
+    Serial.print(millis());
+    Serial.print(",");
+    Serial.print(fanTester.getStaticPressurePa(), 2);
+    Serial.print(",");
+    Serial.print(fanTester.getStaticPaFiltered(), 2);
+    Serial.print(",");
+    Serial.print(fanTester.getVenturiPressurePa(), 2);
+    Serial.print(",");
+    Serial.print(fanTester.getVenturiPaFiltered(), 2);
+    Serial.print(",");
+    Serial.print(fanTester.getFlowM3s(), 4);
+    Serial.print(",");
+    Serial.print(motor.getThrottle());
+    Serial.println(); */
+
+    /*Serial.print("Pot: ");       Serial.print(potRaw);
     Serial.print(" | PWM: ");    Serial.print(throttleUs);
     Serial.print(" | Static: "); Serial.print(fanTester.getStaticPressurePa(), 1); Serial.print(" Pa");
     Serial.print(" | dP: ");     Serial.print(fanTester.getVenturiPressurePa(), 1); Serial.print(" Pa");
     Serial.print(" | V1: ");     Serial.print(fanTester.getV1(), 2);
     Serial.print(" | V2: ");     Serial.print(fanTester.getV2(), 2);
     Serial.print(" | Q: ");      Serial.print(fanTester.getFlowM3s(), 4);
-    Serial.print(" | Motor: ");  Serial.println(motor.getState());
+    Serial.print(" | Motor: ");  Serial.println(motor.getState()); */
   }
 
   static uint32_t lastOledMs = 0;
@@ -100,7 +137,8 @@ void loop() {
     display.setTextColor(SSD1306_WHITE);
 
     display.setCursor(0, 0);
-    display.print("Benchtop Flow Test");
+    display.print("Benchtop Flow");
+    display.print(dataPointCounter);  // <- DISPLAY COUNTER
 
     display.setCursor(0, 10);
     display.print("PWM:");
@@ -110,9 +148,9 @@ void loop() {
 
     display.setCursor(0, 22);
     display.print("S:");
-    display.print(fanTester.getStaticPressurePa(), 0);
+    display.print(fanTester.getStaticPaFiltered(), 0);
     display.print(" dP:");
-    display.print(fanTester.getVenturiPressurePa(), 0);
+    display.print(fanTester.getVenturiPaFiltered(), 0);
 
     display.setCursor(0, 34);
     display.print("V1:");
