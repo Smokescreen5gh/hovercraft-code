@@ -42,7 +42,7 @@ void Tachometer::begin() {
   attachInterrupt(
     digitalPinToInterrupt(_pin),
     tachISR,
-    FALLING
+    RISING
   );
 }
 

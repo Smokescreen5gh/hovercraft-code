@@ -1,3 +1,15 @@
+V3 8/8/2026
+Updates:
+    - Changes start spinup throttle from 1100 to 1400 (This is where the D3530 spins around 6000 rpm)
+        - Since I am testing at 7000 and 8000 rpm, it is easier to get to this set point from higher a throttle
+        - Orignally at 11000 rpm, the d3530 motor would spin to like 3000 rpm, when wanting to reach 7000 rpm, the system would have a big overshoot and settling time to reach 7000 rpm
+
+    - So the motor first gradually ramps to 1400 us throttle, spins at that throttle for 5 seconds (spinup complete) then enables PID
+
+    - Changed the tachometer to sense rising edges instead of falling edges.
+        - Refelective white tape was not working properly and had to switch to light color impellers and use black electrical tape. 
+        - Tachometer senses when black tape is presenet 
+
 V2 6/20/2026
 
 Updates:
