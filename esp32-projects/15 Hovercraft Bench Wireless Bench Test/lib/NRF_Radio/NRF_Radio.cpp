@@ -95,17 +95,17 @@ void NrfRadio::serviceConnection() {
   unsigned long now = millis();
 
   // 1) Send heartbeat periodically
-  if (now - _lastHeartbeatTxMs >= _heartbeatIntervalMs) {
-    RadioPayload hb{};
-    hb.type = PacketType::HEARTBEAT;
-    hb.counter = _counter;     // optional but fine
-    hb.pot1Raw = 0;
-    hb.pot2Raw = 0;
-    
-    sendPackage(hb);
+  if (now - _lastHeartbeatTxMs >= _heartbeatIntervalMs)
+    {
+        RadioPayload hb{};
 
-    _lastHeartbeatTxMs = now;
-  }
+        hb.type = PacketType::HEARTBEAT;
+        hb.counter = _counter;
+
+        sendPackage(hb);
+
+        _lastHeartbeatTxMs = now;
+    }
 
   // 2) Disconnect timeout check (based on last receive time)
   if (_connected && (now - _lastRxMs >= _disconnectTimeoutMs)) {
