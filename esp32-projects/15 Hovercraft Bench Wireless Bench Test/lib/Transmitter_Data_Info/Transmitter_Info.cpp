@@ -1,11 +1,15 @@
 #include "Transmitter_Info.h"
 
+
 Transmitter_Info::Transmitter_Info(DisplayManager& displayManager)
     : _displayManager(displayManager)
 {
 }
 
-void Transmitter_Info::update(int joy1X, 
+void Transmitter_Info::update(
+                const char* RADIO_TX_ADDR,
+                const char* RADIO_RX_ADDR,
+                int joy1X, 
                 int joy1Y,
                 bool joy1Button,
                 int joy2X,
@@ -16,7 +20,9 @@ void Transmitter_Info::update(int joy1X,
                 uint16_t pot3,
                 bool switch1,
                 bool switch2,
-                bool switch3 )
+                bool switch3,
+                bool connected,
+                int randomRx )
 {
     Adafruit_SSD1306& display = _displayManager.getDisplay();
     
@@ -26,7 +32,15 @@ void Transmitter_Info::update(int joy1X,
 
     // Title
     display.setCursor(0, 0);
-    display.println("Joystick Test");
+    display.print("TX:");
+    display.print(RADIO_TX_ADDR);
+
+    display.setCursor(50, 0);
+    display.print(" RX:");
+    display.print(RADIO_RX_ADDR);
+
+    display.setCursor(105,0);
+    display.print(connected ? "CON" : "DIS");
 
     display.setCursor(0, 16);
     display.print("J1 X:");
@@ -75,6 +89,10 @@ void Transmitter_Info::update(int joy1X,
     display.setCursor(80, 45);
     display.print("S3:");
     display.print(switch3 ? "O" : "F");
+
+    display.setCursor(0,55);
+    display.print("NUM: ");
+    display.print(randomRx);
 
 
     display.display();

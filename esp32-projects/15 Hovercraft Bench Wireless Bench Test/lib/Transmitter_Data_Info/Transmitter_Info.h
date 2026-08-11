@@ -9,7 +9,10 @@ public:
     Transmitter_Info(DisplayManager& DisplayManager);
 
     //Method 1: Get the variables (input variables, incoming telemetry) and writes to various lines on the OLED Display
-    void update(int joy1x, 
+    void update(
+                const char* RADIO_TX_ADDR,
+                const char* RADIO_RX_ADDR,
+                int joy1x, 
                 int joy1y,
                 bool joy1button,
                 int joy2x,
@@ -20,7 +23,9 @@ public:
                 uint16_t pot3,
                 bool switch1,
                 bool switch2,
-                bool switch3 );
+                bool switch3,
+                bool connected,
+                int randomRx );
 
 private:
     DisplayManager& _displayManager;
