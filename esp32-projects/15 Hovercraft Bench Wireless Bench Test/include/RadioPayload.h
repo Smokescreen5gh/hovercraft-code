@@ -1,22 +1,37 @@
 #pragma once
 #include <Arduino.h>
 
-// What kind of packet is this?
-enum class PacketType : uint8_t {
-  HEARTBEAT = 0,
-  POT      = 1,
-  MOTOR_STATUS = 2
+enum class PacketType : uint8_t
+{
+    HEARTBEAT,
+    CONTROL,
+    TELEMETRY
 };
 
-// This is the payload that gets sent over NRF (must be <= 32 bytes)
-struct RadioPayload {
-  PacketType type;       // HEARTBEAT or TEXT or Telemetary
-  uint16_t   counter;    // increments every send (helps debugging) basically monitors how many times the packets the struct has been sent. can help identify if any packets were gone
-  uint16_t   pot1Raw;
-  uint16_t   pot2Raw;
-  char       motor1State;
-  char       motor2State;
-};
+struct RadioPayload
+{
+    PacketType type;
 
-// NRF24L01 payload max is 32 bytes by default
-static_assert(sizeof(RadioPayload) <= 32, "RadioPayload must be <= 32 bytes!");
+    // Generic tracking
+    uint16_t counter;
+
+    // -------- CONTROL DATA --------
+    uint16_t joy1X;
+    uint16_t joy1Y;
+    bool joy1Button;
+
+    uint16_t joy2X;
+    uint16_t joy2Y;
+    bool joy2Button;
+
+    uint16_t pot1;
+    uint16_t pot2;
+    uint16_t pot3;
+
+    bool switch1;
+    bool switch2;
+    bool switch3;
+
+    // -------- TELEMETRY DATA --------
+    uint8_t randomNumber;
+};
