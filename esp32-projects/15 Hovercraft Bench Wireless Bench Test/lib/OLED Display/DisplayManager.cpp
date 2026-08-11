@@ -46,3 +46,15 @@ Adafruit_SSD1306& DisplayManager::getDisplay()
     return _display;
 }
 
+// METHOD 3: Display Any message
+void DisplayManager::displayMessage(const char*message)
+{
+    _display.clearDisplay();
+    _display.setTextSize(1);
+    _display.setTextColor(SSD1306_WHITE);
+    _display.setCursor(0, 0);
+    _display.println(message);
+    _display.display();
+    delay (3000);
+}
+

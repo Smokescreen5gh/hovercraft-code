@@ -42,6 +42,9 @@ public:
 
     const char* getName() const;
 
+    // METHOD 3: Display any message that isn't neccisearly belong in a message group
+    void displayMessage(const char*message);
+
 
 private:
     uint8_t _screenWidth;

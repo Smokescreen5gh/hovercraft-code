@@ -8,7 +8,7 @@ ToggleSwitch::ToggleSwitch(uint8_t pin, const char* name)
 
 void ToggleSwitch::begin()
 {
-    pinMode(_pin, INPUT_PULLUP);
+    pinMode(_pin, INPUT);
     update();
 }
 
