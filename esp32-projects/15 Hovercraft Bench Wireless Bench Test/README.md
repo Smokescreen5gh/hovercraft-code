@@ -14,6 +14,10 @@ Bugs/Improvements
 =================  Improvmenets ======================
 1. Made payload package agnostic to the NRF Driver 
 
+The NRF radio driver was modified to be payload-agnostic by converting NrfRadio into a templated class. Previously, the driver was hard-coded to use a single RadioPayload structure, which meant every transmitter/receiver configuration had to share and continuously modify the same payload file.
+
+With the new approach, each test configuration can define and use its own payload type:
+
 
 V3 8/11/2026
 Full Bi Directional Transmitter built and tested with a dummy reciever
