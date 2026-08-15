@@ -1,11 +1,10 @@
 // This file implements the NRF Radio Class Method
-
-#include "NRF_Radio.h" // Uses the .h file that holds the class defintion 
 #include <SPI.h>
 
 // Define the Constructor
 // ---------------------- Constructor ----------------------
-NrfRadio::NrfRadio(uint8_t cePin, uint8_t csnPin, const uint8_t* rxAddress, const uint8_t* txAddress, uint8_t nodeId) 
+template <typename PayloadType>
+NrfRadio<PayloadType>::NrfRadio(uint8_t cePin, uint8_t csnPin, const uint8_t* rxAddress, const uint8_t* txAddress, uint8_t nodeId) 
     :
     // Assigns the pins and radio addresses 
     _radio(cePin, csnPin),
@@ -23,7 +22,8 @@ NrfRadio::NrfRadio(uint8_t cePin, uint8_t csnPin, const uint8_t* rxAddress, cons
         
     
 // ------------------- METHOD 1 Begin() ----------------------
-bool NrfRadio::begin() {
+template <typename PayloadType>
+bool NrfRadio<PayloadType>::begin() {
   // Start SPI (ESP32 default SPI pins are used unless you pass custom pins)
   SPI.begin();
 
@@ -38,8 +38,8 @@ bool NrfRadio::begin() {
   _radio.setPALevel(RF24_PA_LOW);
   _radio.setChannel(76);
 
-  // Fixed payload size (RadioPayload must be <= 32 bytes)
-  _radio.setPayloadSize(sizeof(RadioPayload));
+  // Fixed payload size (PayloadType must be <= 32 bytes)
+  _radio.setPayloadSize(sizeof(PayloadType));
 
   // We are using heartbeat/timeout for "connection", not hardware ACKs
   _radio.setAutoAck(false);
@@ -61,9 +61,10 @@ bool NrfRadio::begin() {
 }
 
 // ------------------- METHOD 2 sendPackage() ----------------------
-bool NrfRadio::sendPackage(const RadioPayload& p) {
+template <typename PayloadType>
+bool NrfRadio<PayloadType>::sendPackage(const PayloadType& p) {
   _radio.stopListening();                              // switch to TX mode
-  bool ok = _radio.write(&p, sizeof(RadioPayload));    // transmit packet
+  bool ok = _radio.write(&p, sizeof(PayloadType));    // transmit packet
   _radio.startListening();                             // back to RX mode
 
   if (ok) {
@@ -76,12 +77,13 @@ bool NrfRadio::sendPackage(const RadioPayload& p) {
 }
 
 // ------------------- METHOD 3 receivePackage() ----------------------
-bool NrfRadio::receivePackage(RadioPayload& out) {
+template <typename PayloadType>
+bool NrfRadio<PayloadType>::receivePackage(PayloadType& out) {
   if (!_radio.available()) {
     return false;
   }
 
-  _radio.read(&out, sizeof(RadioPayload));
+  _radio.read(&out, sizeof(PayloadType));
 
   // We received something -> update connection timing/state
   _lastRxMs = millis();
@@ -91,13 +93,14 @@ bool NrfRadio::receivePackage(RadioPayload& out) {
 }
 
 // ------------------- METHOD 4 serviceConnection() ----------------------
-void NrfRadio::serviceConnection() {
+template <typename PayloadType>
+void NrfRadio<PayloadType>::serviceConnection() {
   unsigned long now = millis();
 
   // 1) Send heartbeat periodically
   if (now - _lastHeartbeatTxMs >= _heartbeatIntervalMs)
     {
-        RadioPayload hb{};
+        PayloadType hb{};
 
         hb.type = PacketType::HEARTBEAT;
         hb.counter = _counter;
@@ -113,6 +116,7 @@ void NrfRadio::serviceConnection() {
   }
 }
 
-bool NrfRadio::isConnected() const {
+template <typename PayloadType>
+bool NrfRadio<PayloadType>::isConnected() const {
   return _connected;
 }

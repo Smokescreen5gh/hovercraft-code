@@ -1,11 +1,12 @@
 // This file goes over the NRF Radio Class
-
 #pragma once
 
 #include <Arduino.h>
 #include <RF24.h>
-#include "RadioPayload.h"
 
+
+
+template <typename PayloadType>
 class NrfRadio {
 public:
   // Constructor: pass pins, addresses, and node id (1 or 2)
@@ -17,11 +18,11 @@ public:
 
   // METHOD 2: Send the datapackage (TEXT / HEARTBEAT / future CONTROL)
   // Returns true if the write succeeded
-  bool sendPackage(const RadioPayload& p);
+  bool sendPackage(const PayloadType& p);
 
   // METHOD 3: Receive the datapackage (bidirectional)
   // Returns true only when a NEW packet was read into 'out'
-  bool receivePackage(RadioPayload& out);
+  bool receivePackage(PayloadType& out);
 
   // METHOD 4: Connection service (call every loop)
   // - Sends heartbeat when the interval expires
@@ -56,5 +57,7 @@ private:
 
   // --- internal helpers ---
   void sendHeartbeat();
-  void handleReceived(const RadioPayload& p);
+  void handleReceived(const PayloadType& p);
 };
+
+#include "NRF_Radio.tpp"

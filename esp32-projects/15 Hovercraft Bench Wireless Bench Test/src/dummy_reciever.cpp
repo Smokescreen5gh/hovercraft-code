@@ -1,8 +1,18 @@
 #include <Arduino.h>
 
-#include "DisplayManager.h"
-#include "NRF_Radio.h"
-#include "Reciever_Info.h"
+/*
+ --------------------------------------------------------------
+       Import Libraries
+ --------------------------------------------------------------
+*/
+// Oled Library
+#include "DisplayManager.h"      // Hardware Library
+#include "Dummy_Reciever_Info.h" // Data Library
+
+// Radio Library
+#include "NRF_Radio.h"          // Hardware Library
+#include "Dummy_RadioPayload.h" // Data Library
+
 
 /*
  --------------------------------------------------------------
@@ -44,7 +54,7 @@ Reciever_Info reciever_info(oled_display);
 static const uint8_t RADIO_RX_ADDR[6] = "00002";
 static const uint8_t RADIO_TX_ADDR[6] = "00001";
 
-NrfRadio radio(
+NrfRadio<Dummy_RadioPayload> radio(
     PIN_CE,
     PIN_CSN,
     RADIO_RX_ADDR,
@@ -56,7 +66,7 @@ NrfRadio radio(
 // ------- Persistent Received Data -----------
 
 // Stores the LAST valid CONTROL packet
-RadioPayload controlRx{};
+Dummy_RadioPayload controlRx{};
 
 // Stores fake telemetry value
 static uint8_t randomNumber = 0;
@@ -105,7 +115,7 @@ void loop()
     // 2) Receive packets
     // ======================================================
 
-    RadioPayload in{};
+    Dummy_RadioPayload in{};
 
     if (radio.receivePackage(in))
     {
@@ -169,7 +179,7 @@ void loop()
 
         randomNumber = random(1, 101);
 
-        RadioPayload out{};
+        Dummy_RadioPayload out{};
 
         out.type = PacketType::TELEMETRY;
         out.randomNumber = randomNumber;

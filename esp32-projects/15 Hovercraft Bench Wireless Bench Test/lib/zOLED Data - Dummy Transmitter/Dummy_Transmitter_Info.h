@@ -24,7 +24,8 @@ public:
                 bool switch1,
                 bool switch2,
                 bool switch3,
-                bool connected);
+                bool connected,
+                int randomRx );
 
 private:
     DisplayManager& _displayManager;

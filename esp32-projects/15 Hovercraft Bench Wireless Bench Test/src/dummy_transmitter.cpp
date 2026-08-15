@@ -7,12 +7,11 @@
 */
 // Oled Library
 #include "DisplayManager.h"   // Hardware Library
-#include "Transmitter_Info.h" // Data Library
+#include "Dummy_Transmitter_Info.h" // Data Library
 
 // Radio Library
-#include "RadioPayload.h" // Data Library
 #include "NRF_Radio.h"          // Hardware Library
- 
+#include "Dummy_RadioPayload.h" // Data Library 
 
 // Input Devices Libraries
 #include "Joystick.h"
@@ -73,11 +72,9 @@ static const uint8_t RADIO_RX_ADDR[6] = "00001";
 static const uint8_t RADIO_TX_ADDR[6] = "00002";
 
 // Create radio object (CE, CSN)
-NrfRadio<RadioPayload> radio(PIN_CE, PIN_CSN, RADIO_RX_ADDR, RADIO_TX_ADDR, 1);
+NrfRadio<Dummy_RadioPayload> radio(PIN_CE, PIN_CSN, RADIO_RX_ADDR, RADIO_TX_ADDR, 1);
 
-// ------- Persistent Received Data -----------
-// Stores the LAST valid Telemetry packet
-RadioPayload telemetryRx{};
+
 /*
  --------------------------------------------------------------
        Setup
@@ -141,30 +138,16 @@ void loop() {
   radio.serviceConnection();
 
   // 2) Check for recieved packets
+  static uint8_t randomRx = 0;
 
-  RadioPayload in{};
+  Dummy_RadioPayload in{};
   bool gotPacket = radio.receivePackage(in);
 
   if (gotPacket)
   {
       if (in.type == PacketType::TELEMETRY)
       {
-          telemetryRx = in;
-          Serial.println("------ Telemtery Packet --------");
-
-          Serial.print(">Servo 1 Angle: ");
-          Serial.println(telemetryRx.Servo_1_Angle);
-
-          Serial.print(">Servo 2 Angle: ");
-          Serial.println(telemetryRx.Servo_2_Angle);
-
-          Serial.print(">Servo 3 Angle: ");
-          Serial.println(telemetryRx.Servo_3_Angle);
-
-          Serial.print(">Servo 4 Angle: ");
-          Serial.println(telemetryRx.Servo_4_Angle);
-
-          Serial.println();
+          randomRx = in.randomNumber;
       }
   }
 
@@ -191,7 +174,7 @@ void loop() {
     {
         lastControlMs = nowMs;
 
-        RadioPayload out{};
+        Dummy_RadioPayload out{};
 
         out.type = PacketType::CONTROL;
 
@@ -243,7 +226,10 @@ void loop() {
       Switch2.isOn(),
       Switch3.isOn(),
 
-      radio.isConnected()
+      radio.isConnected(),
+
+      randomRx
+
     );
   }
 

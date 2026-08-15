@@ -8,10 +8,10 @@ enum class PacketType : uint8_t
     TELEMETRY
 };
 
-struct RadioPayload
+struct Dummy_RadioPayload
 {
-    PacketType type;  // Heartbeat or control or Telemetry
-    uint16_t counter; // Generic tracking
+    PacketType type;
+    uint16_t counter;
 
     // -------- CONTROL DATA --------
     uint16_t joy1X;
@@ -31,9 +31,5 @@ struct RadioPayload
     bool switch3;
 
     // -------- TELEMETRY DATA --------
-    uint8_t Servo_1_Angle;
-    uint8_t Servo_2_Angle;
-    uint8_t Servo_3_Angle;
-    uint8_t Servo_4_Angle;
-   
+    uint8_t randomNumber;
 };

@@ -1,4 +1,4 @@
-#include "Transmitter_Info.h"
+#include "Dummy_Transmitter_Info.h"
 
 
 Transmitter_Info::Transmitter_Info(DisplayManager& displayManager)
@@ -21,7 +21,8 @@ void Transmitter_Info::update(
                 bool switch1,
                 bool switch2,
                 bool switch3,
-                bool connected)
+                bool connected,
+                int randomRx )
 {
     Adafruit_SSD1306& display = _displayManager.getDisplay();
     
@@ -88,6 +89,10 @@ void Transmitter_Info::update(
     display.setCursor(80, 45);
     display.print("S3:");
     display.print(switch3 ? "O" : "F");
+
+    display.setCursor(0,55);
+    display.print("NUM: ");
+    display.print(randomRx);
 
 
     display.display();

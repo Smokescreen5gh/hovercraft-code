@@ -1,3 +1,20 @@
+V4 8/15/2026
+Integrated PCA9685 board to control various PWM devices on the reciever side.
+
+Transmitter has the same input devices and now can control the pwm devices on the reciever side 
+
+
+-----------------------------------------------------
+Bugs/Improvements
+-----------------------------------------------------
+================= BUGS ===============================
+
+
+
+=================  Improvmenets ======================
+1. Made payload package agnostic to the NRF Driver 
+
+
 V3 8/11/2026
 Full Bi Directional Transmitter built and tested with a dummy reciever
 
