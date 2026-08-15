@@ -116,40 +116,40 @@ void loop()
 
             Serial.println("----- CONTROL PACKET -----");
 
-            Serial.print("J1 X: ");
+            Serial.print(">J1 X: ");
             Serial.println(controlRx.joy1X);
 
-            Serial.print("J1 Y: ");
+            Serial.print(">J1 Y: ");
             Serial.println(controlRx.joy1Y);
 
-            Serial.print("J1 B: ");
+            Serial.print(">J1 B: ");
             Serial.println(controlRx.joy1Button);
 
-            Serial.print("J2 X: ");
+            Serial.print(">J2 X: ");
             Serial.println(controlRx.joy2X);
 
-            Serial.print("J2 Y: ");
+            Serial.print(">J2 Y: ");
             Serial.println(controlRx.joy2Y);
 
-            Serial.print("J2 B: ");
+            Serial.print(">J2 B: ");
             Serial.println(controlRx.joy2Button);
 
-            Serial.print("P1: ");
+            Serial.print(">P1: ");
             Serial.println(controlRx.pot1);
 
-            Serial.print("P2: ");
+            Serial.print(">P2: ");
             Serial.println(controlRx.pot2);
 
-            Serial.print("P3: ");
+            Serial.print(">P3: ");
             Serial.println(controlRx.pot3);
 
-            Serial.print("S1: ");
+            Serial.print(">S1: ");
             Serial.println(controlRx.switch1);
 
-            Serial.print("S2: ");
+            Serial.print(">S2: ");
             Serial.println(controlRx.switch2);
 
-            Serial.print("S3: ");
+            Serial.print(">S3: ");
             Serial.println(controlRx.switch3);
 
             Serial.println();
