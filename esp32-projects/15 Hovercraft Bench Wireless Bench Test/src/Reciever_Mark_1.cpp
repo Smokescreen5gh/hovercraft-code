@@ -84,8 +84,8 @@ PCA_Servo BottomLeft_Servo(pwm, 9);
 
 // Headlight
 #define SER_DATA   25 //tpic 3
-#define SER_CLK    32 //tpic 12
-#define SER_LATCH  33 //tpic 13
+#define SER_CLK    32 //tpic 13
+#define SER_LATCH  33 //tpic 12
 
 ShiftRegisterDriver headlightDriver(SER_DATA, SER_CLK, SER_LATCH, 1, "Headlight Registers");
 
