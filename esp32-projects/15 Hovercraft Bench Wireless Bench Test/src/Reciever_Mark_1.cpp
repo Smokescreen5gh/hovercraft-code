@@ -19,8 +19,8 @@
 // Output Devices Libraries
 #include "bldc.h"
 #include "PCA_Servo.h"
-
-
+#include "ShiftRegisterDriver.h"
+#include "Headlight.h"
 
 // I2C Buses
 // BUS #1: OLED + Static sensor bus
@@ -66,6 +66,13 @@ static const uint8_t RADIO_TX_ADDR[6] = "00001";
 // Create radio object (CE, CSN)
 NrfRadio<RadioPayload> radio(PIN_CE, PIN_CSN, RADIO_RX_ADDR, RADIO_TX_ADDR, 2);
 
+// ------- Persistent Received Data -----------
+// Stores the LAST valid CONTROL packet
+RadioPayload controlRx{};
+
+
+
+
 // ------- BLDC Motors -----------
 
 
@@ -75,11 +82,15 @@ PCA_Servo TopLeft_Servo(pwm, 7);
 PCA_Servo BottomRight_Servo(pwm, 8);
 PCA_Servo BottomLeft_Servo(pwm, 9);
 
+// Headlight
+#define SER_DATA   25 //tpic 3
+#define SER_CLK    32 //tpic 12
+#define SER_LATCH  33 //tpic 13
 
-// ------- Persistent Received Data -----------
-// Stores the LAST valid CONTROL packet
-RadioPayload controlRx{};
+ShiftRegisterDriver headlightDriver(SER_DATA, SER_CLK, SER_LATCH, 1, "Headlight Registers");
 
+// One rectangle using 6 LEDs on outputs 0 through 5
+HeadlightRect rect1(headlightDriver, 6, 0, "Rect 1");
 
 void setup() {
     Serial.begin(115200);
@@ -91,6 +102,7 @@ void setup() {
     //I2C_0.begin(SDA1, SCL1);
     I2C_1.begin(SDA2, SCL2);
 
+    // Intialize the PCA9685 Board
     if (!pwm.begin()) {
     Serial.println("PCA9685 FAILED");
     }
@@ -109,6 +121,10 @@ void setup() {
     TopLeft_Servo.begin(0);
     BottomRight_Servo.begin(0);
     BottomLeft_Servo.begin(0);
+
+    //Intialize the Headlights
+    headlightDriver.begin();
+    rect1.begin();
 }
 
 void loop() {
@@ -120,7 +136,7 @@ void loop() {
     // ======================================================
 
     radio.serviceConnection();
-
+    
 
     // ======================================================
     // 2) Receive packets
@@ -185,6 +201,25 @@ void loop() {
     TopLeft_Servo.write(servoAngle);
     BottomRight_Servo.write(servoAngle);
     BottomLeft_Servo.write(servoAngle);
+
+    // 3A) Control the Headlights
+    if (controlRx.switch1)
+    {
+        if (rect1.isOff())
+        {
+            rect1.startCenterFill(120);
+        }
+    }
+    else
+    {
+        if (rect1.isOn())
+        {
+            rect1.startShutdown(120);
+        }
+    }
+
+rect1.update();
+    rect1.update();
 
     // ======================================================
     // 4) Send Telemetry every 500 ms

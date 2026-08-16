@@ -3,7 +3,7 @@
 
 /*
 ============================================================
-ShiftRegisterDriver.h
+ShiftRegisterDriver.h TPICB595
 
 Low-level driver for daisy-chained shift registers.
 
