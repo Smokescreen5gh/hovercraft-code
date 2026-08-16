@@ -87,10 +87,13 @@ PCA_Servo BottomLeft_Servo(pwm, 9);
 #define SER_CLK    32 //tpic 13
 #define SER_LATCH  33 //tpic 12
 
-ShiftRegisterDriver headlightDriver(SER_DATA, SER_CLK, SER_LATCH, 1, "Headlight Registers");
+ShiftRegisterDriver headlightDriver(SER_DATA, SER_CLK, SER_LATCH, 3, "Headlight Registers");
 
 // One rectangle using 6 LEDs on outputs 0 through 5
-HeadlightRect rect1(headlightDriver, 6, 0, "Rect 1");
+HeadlightRect rect1(headlightDriver, 6, 0,  "Rect 1");   // outputs 0–5
+HeadlightRect rect2(headlightDriver, 6, 6,  "Rect 2");   // outputs 6–11
+HeadlightRect rect3(headlightDriver, 6, 12, "Rect 3");   // outputs 12–17
+HeadlightRect rect4(headlightDriver, 6, 18, "Rect 4");   // outputs 18–23
 
 void setup() {
     Serial.begin(115200);
@@ -125,6 +128,9 @@ void setup() {
     //Intialize the Headlights
     headlightDriver.begin();
     rect1.begin();
+    rect2.begin();
+    rect3.begin();
+    rect4.begin();
 }
 
 void loop() {
@@ -205,21 +211,23 @@ void loop() {
     // 3A) Control the Headlights
     if (controlRx.switch1)
     {
-        if (rect1.isOff())
-        {
-            rect1.startCenterFill(120);
-        }
+        if (rect1.isOff()) rect1.startCenterFill(120);
+        if (rect2.isOff()) rect2.startCenterFill(120);
+        if (rect3.isOff()) rect3.startCenterFill(120);
+        if (rect4.isOff()) rect4.startCenterFill(120);
     }
     else
     {
-        if (rect1.isOn())
-        {
-            rect1.startShutdown(120);
-        }
+        if (rect1.isOn()) rect1.startShutdown(120);
+        if (rect2.isOn()) rect2.startShutdown(120);
+        if (rect3.isOn()) rect3.startShutdown(120);
+        if (rect4.isOn()) rect4.startShutdown(120);
     }
 
-rect1.update();
     rect1.update();
+    rect2.update();
+    rect3.update();
+    rect4.update();
 
     // ======================================================
     // 4) Send Telemetry every 500 ms
