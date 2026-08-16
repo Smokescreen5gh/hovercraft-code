@@ -1,3 +1,9 @@
+V5 8/15/2026
+All 4 Headlight units are working and respond to radio
+
+Intialized 3 TPIC ICs
+Operating 4 units of 6 LEDs
+
 V4 8/15/2026
 Integrated PCA9685 board to control various PWM devices on the reciever side.
 
