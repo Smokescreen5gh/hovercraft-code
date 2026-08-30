@@ -17,7 +17,15 @@ public:
                 int Servo_3,
                 int Servo_4,
                 uint16_t pot1,
-                bool connected);
+                uint16_t pot2,
+                uint16_t pot3,
+                bool connected,
+                char motor1_State,
+                char motor2_State,
+                char motor3_State,
+                char motor4_State,
+                char motor5_State,
+                char motor6_State);
 
 private:
     DisplayManager& _displayManager;

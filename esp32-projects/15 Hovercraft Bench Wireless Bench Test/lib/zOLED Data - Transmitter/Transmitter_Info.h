@@ -24,7 +24,13 @@ public:
                 bool switch1,
                 bool switch2,
                 bool switch3,
-                bool connected);
+                bool connected,
+                char motor1_State,
+                char motor2_State,
+                char motor3_State,
+                char motor4_State,
+                char motor5_State,
+                char motor6_State);
 
 private:
     DisplayManager& _displayManager;

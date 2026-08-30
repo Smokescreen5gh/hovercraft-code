@@ -35,5 +35,13 @@ struct RadioPayload
     uint8_t Servo_2_Angle;
     uint8_t Servo_3_Angle;
     uint8_t Servo_4_Angle;
+
+    char motor_1_state;
+    char motor_2_state;
+    char motor_3_state;
+    char motor_4_state;
+    char motor_5_state;
+    char motor_6_state;
+   
    
 };

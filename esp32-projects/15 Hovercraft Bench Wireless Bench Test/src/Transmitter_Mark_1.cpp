@@ -87,6 +87,9 @@ void setup() {
   Serial.begin(115200);
   delay(200);
 
+  Serial.print("Payload size: ");
+  Serial.println(sizeof(RadioPayload));
+
   // ================ Initialize the Elements ============
   oled_display.begin("Hovercraft Transmitter Mark 1");
 
@@ -111,18 +114,25 @@ void setup() {
 
   // ================== Calibration Message ================
   oled_display.displayMessage("Calibrating the Analog Sticks");
-  delay (2000);
 
   // Calibrate the Joysticks
   Serial.println("Starting Joy 1 calibration");
   joy1.calibrate();
+  oled_display.displayMessage("Joystick 1 Calibrated");
   Serial.println("Joy 1 done");
+  delay(500);
+ 
 
   Serial.println("Starting Joy 2 calibration");
   joy2.calibrate();
+  oled_display.displayMessage("Joystick 2 Calibrated");
   Serial.println("Joy 2 done");
+  delay(500);
 
+
+  oled_display.displayMessage("Calibration Complete");
   Serial.println("Entering loop");
+  delay(500);
 
 
 
@@ -243,7 +253,14 @@ void loop() {
       Switch2.isOn(),
       Switch3.isOn(),
 
-      radio.isConnected()
+      radio.isConnected(),
+
+      telemetryRx.motor_1_state,
+      telemetryRx.motor_2_state,
+      telemetryRx.motor_3_state,
+      telemetryRx.motor_4_state,
+      telemetryRx.motor_5_state,
+      telemetryRx.motor_6_state
     );
   }
 

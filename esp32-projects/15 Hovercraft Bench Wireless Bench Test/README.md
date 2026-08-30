@@ -1,3 +1,19 @@
+V6 8/30/2026
+Was able to connect 6 motors. However I only have tested motors 3 and 4 for now. 
+
+
+Issues
+1. Motor does not disable itself after the radio module is disconnected. it will spin at the throttle the potentiometer is left at before it got disconnected. Safety issue
+        - Fix, motor 3 and 4 would use potentiometer 3 data (throttle 2) for its control, but used potentiomter 2 (throttle 1) for arming.
+        - so when the controller was running, potentiometer 2 was at 0 while pot 3 was active. 
+        - when disconnect and reconnect, the motors would arm becaues pot 2 was at 0. 
+
+2. Transmitter disconnects from the reciever intermittdely. (Observed this is a TX problem for now). It can not recieve proper telemtry from the reciever nor keep Connected status properly. This could be an issue with the payload being over 32 bytes. 
+
+However I can still control the motors perfectly even when the transmitter is showing dis intermiedittly. this could be a heartbeat packet issue. 
+
+
+
 V5 8/15/2026
 All 4 Headlight units are working and respond to radio
 
