@@ -35,7 +35,7 @@ bool DisplayManager::begin(const char*start_message)
     _display.setCursor(0, 0);
     _display.println(start_message);
     _display.display();
-    delay (3000);
+    delay (1000);
 
     return true;
 }
@@ -55,6 +55,6 @@ void DisplayManager::displayMessage(const char*message)
     _display.setCursor(0, 0);
     _display.println(message);
     _display.display();
-    delay (3000);
+    delay (100);
 }
 
