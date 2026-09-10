@@ -8,6 +8,7 @@ class PID_Display
 public:
     PID_Display(DisplayManager& displayManager);
 
+    //Method 1: gets the variabels and writes to various lines on the OLED Display 
     void update(bool SystemEnabled,
                     float SetPoint,
                     float rpmFiltered,

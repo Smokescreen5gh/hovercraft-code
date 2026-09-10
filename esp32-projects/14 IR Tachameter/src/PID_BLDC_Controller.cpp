@@ -187,173 +187,173 @@ int slewLimit(int currentValue, int targetValue, int maxStep) {
 }
 
 void loop() {
-      checkSerialCommand();
+  checkSerialCommand();
 
-      static unsigned long lastDisplayMs = 0;
-      unsigned long nowMs = millis();
+  static unsigned long lastDisplayMs = 0;
+  unsigned long nowMs = millis();
 
-      TachData data = tach1.measure();
-      rpm = data.rpmFiltered;
+  TachData data = tach1.measure();
+  rpm = data.rpmFiltered;
 
-      static int throttleUs = 1000;
-      float error = setpoint - rpm;
+  static int throttleUs = 1000;
+  float error = setpoint - rpm;
 
-      // STOPPED MODE
-      if (!systemEnabled) {
-            motor1.disable();
+  // STOPPED MODE
+  if (!systemEnabled) {
+        motor1.disable();
 
-            eintegral = 0;
-            eprev = 0;
-            prevT = micros();
-      }
+        eintegral = 0;
+        eprev = 0;
+        prevT = micros();
+  }
 
-      // ARMING MODE
-      else if (!escArmed) {
-            throttleUs = 1000;
-            motor1.setThrottle(throttleUs);
-
-            eintegral = 0;
-            eprev = 0;
-            prevT = micros();
-
-            if (nowMs - armStartMs >= ESC_ARM_TIME_MS) {
-                  escArmed = true;
-                  spinupDone = false;
-                  spinupStartMs = nowMs;
-                  motor1.enable();
-
-                  Serial.println("ESC ARMED - SPINUP");
-                  logEvent("ARMED");
-            }
-      }
-
-      // SPINUP MODE
-      else if (!spinupDone) {
-
-        // Ramp toward 1400 us
-        if (!spinupAtTarget &&
-            nowMs - spinupStartMs >= SPINUP_STEP_TIME_MS) {
-
-          spinupStartMs = nowMs;
-          throttleUs += SPINUP_STEP_US;
-
-          if (throttleUs >= SPINUP_THROTTLE_US) {
-            throttleUs = SPINUP_THROTTLE_US;
-            spinupAtTarget = true;
-            spinupHoldStartMs = nowMs;
-
-            Serial.println("1400 us reached - holding");
-          }
-        }
-
+  // ARMING MODE
+  else if (!escArmed) {
+        throttleUs = 1000;
         motor1.setThrottle(throttleUs);
 
         eintegral = 0;
         eprev = 0;
         prevT = micros();
 
-        // Hold 1400 us for 5 seconds
-        if (spinupAtTarget &&
-            nowMs - spinupHoldStartMs >= SPINUP_HOLD_TIME_MS) {
+        if (nowMs - armStartMs >= ESC_ARM_TIME_MS) {
+              escArmed = true;
+              spinupDone = false;
+              spinupStartMs = nowMs;
+              motor1.enable();
 
-          spinupDone = true;
-
-          eintegral = 0;
-          eprev = setpoint - rpm;
-          prevT = micros();
-
-          Serial.println("HOLD DONE - PID ACTIVE");
-          logEvent("SPINUP_DONE");
+              Serial.println("ESC ARMED - SPINUP");
+              logEvent("ARMED");
         }
+  }
+
+  // SPINUP MODE
+  else if (!spinupDone) {
+
+    // Ramp toward 1400 us
+    if (!spinupAtTarget &&
+        nowMs - spinupStartMs >= SPINUP_STEP_TIME_MS) {
+
+      spinupStartMs = nowMs;
+      throttleUs += SPINUP_STEP_US;
+
+      if (throttleUs >= SPINUP_THROTTLE_US) {
+        throttleUs = SPINUP_THROTTLE_US;
+        spinupAtTarget = true;
+        spinupHoldStartMs = nowMs;
+
+        Serial.println("1400 us reached - holding");
       }
+    }
 
-      // PID MODE
-      else {
-            unsigned long currT = micros();
-            float deltaT = (currT - prevT) / 1000000.0;
-            prevT = currT;
+    motor1.setThrottle(throttleUs);
 
-            float dedt = (error - eprev) / deltaT;
+    eintegral = 0;
+    eprev = 0;
+    prevT = micros();
 
-            eintegral = eintegral + error * deltaT;
-            eintegral = constrain(eintegral, -15000, 15000);
+    // Hold 1400 us for 5 seconds
+    if (spinupAtTarget &&
+        nowMs - spinupHoldStartMs >= SPINUP_HOLD_TIME_MS) {
 
-            float pidOutput =
-            kp * error +
-            ki * eintegral +
-            kd * dedt;
+      spinupDone = true;
 
-            int desiredThrottle = 1400 + pidOutput;
-            desiredThrottle = constrain(desiredThrottle, 1000, 2000);
+      eintegral = 0;
+      eprev = setpoint - rpm;
+      prevT = micros();
 
-            throttleUs = slewLimit(throttleUs, desiredThrottle, MAX_THROTTLE_STEP_US);
+      Serial.println("HOLD DONE - PID ACTIVE");
+      logEvent("SPINUP_DONE");
+    }
+  }
 
-            motor1.setThrottle(throttleUs);
+  // PID MODE
+  else {
+        unsigned long currT = micros();
+        float deltaT = (currT - prevT) / 1000000.0;
+        prevT = currT;
 
-            eprev = error;
-      }
+        float dedt = (error - eprev) / deltaT;
+
+        eintegral = eintegral + error * deltaT;
+        eintegral = constrain(eintegral, -15000, 15000);
+
+        float pidOutput =
+        kp * error +
+        ki * eintegral +
+        kd * dedt;
+
+        int desiredThrottle = 1400 + pidOutput;
+        desiredThrottle = constrain(desiredThrottle, 1000, 2000);
+
+        throttleUs = slewLimit(throttleUs, desiredThrottle, MAX_THROTTLE_STEP_US);
+
+        motor1.setThrottle(throttleUs);
+
+        eprev = error;
+  }
 
 
-      // ------- Serial Print -------------
-      Serial.print("System: ");
-      Serial.print(systemEnabled ? "ON" : "OFF");
-      Serial.print(" | Armed: ");
-      Serial.print(escArmed ? "YES" : "NO");
-      Serial.print(" | Spinup: ");
-      Serial.print(spinupDone ? "DONE" : "NO");
-      Serial.print(" | Setpoint: ");
-      Serial.print(setpoint);
-      Serial.print(" | RPM: ");
-      Serial.print(rpm);
-      Serial.print(" | Error: ");
-      Serial.print(error);
-      Serial.print(" | Throttle: ");
-      Serial.print(throttleUs);
-      Serial.print(" | Accepted: ");
-      Serial.print(data.acceptedPulseCount);
-      Serial.print(" | OutlierReject: ");
-      Serial.print(data.rejectedOutlierCount);
-      Serial.print(" | FastReject: ");
-      Serial.print(data.rejectedFastPulseCount);
-      Serial.print(" | Kp: ");
-      Serial.print(kp);
-      Serial.print(" | Ki: ");
-      Serial.print(ki);
-      Serial.print(" | Kd: ");
-      Serial.print(kd);
-      Serial.print(" | State: ");
-      Serial.println(motor1.getState());
-      
+  // ------- Serial Print -------------
+  Serial.print("System: ");
+  Serial.print(systemEnabled ? "ON" : "OFF");
+  Serial.print(" | Armed: ");
+  Serial.print(escArmed ? "YES" : "NO");
+  Serial.print(" | Spinup: ");
+  Serial.print(spinupDone ? "DONE" : "NO");
+  Serial.print(" | Setpoint: ");
+  Serial.print(setpoint);
+  Serial.print(" | RPM: ");
+  Serial.print(rpm);
+  Serial.print(" | Error: ");
+  Serial.print(error);
+  Serial.print(" | Throttle: ");
+  Serial.print(throttleUs);
+  Serial.print(" | Accepted: ");
+  Serial.print(data.acceptedPulseCount);
+  Serial.print(" | OutlierReject: ");
+  Serial.print(data.rejectedOutlierCount);
+  Serial.print(" | FastReject: ");
+  Serial.print(data.rejectedFastPulseCount);
+  Serial.print(" | Kp: ");
+  Serial.print(kp);
+  Serial.print(" | Ki: ");
+  Serial.print(ki);
+  Serial.print(" | Kd: ");
+  Serial.print(kd);
+  Serial.print(" | State: ");
+  Serial.println(motor1.getState());
+  
 
-      // ----- Teleplot -----
-      Serial.print(">rpm:");
-      Serial.println(rpm);
+  // ----- Teleplot -----
+  Serial.print(">rpm:");
+  Serial.println(rpm);
 
-      Serial.print(">setpoint:");
-      Serial.println(setpoint);
+  Serial.print(">setpoint:");
+  Serial.println(setpoint);
 
-      Serial.print(">throttle:");
-      Serial.println(throttleUs);
+  Serial.print(">throttle:");
+  Serial.println(throttleUs);
 
-      Serial.print(">error:");
-      Serial.println(error);
+  Serial.print(">error:");
+  Serial.println(error);
 
-      // -------------- Display OLED -----------
-      if (nowMs - lastDisplayMs >= 200) {
-            lastDisplayMs = nowMs;
+  // -------------- Display OLED -----------
+  if (nowMs - lastDisplayMs >= 200) {
+    lastDisplayMs = nowMs;
 
-            pidDisplay.update(
-                        systemEnabled,
-                        setpoint,
-                        rpm,
-                        error,
-                        throttleUs,
-                        kp,
-                        ki,
-                        kd,
-                        motor1.getState()
-                  );
-      }
+    pidDisplay.update(
+      systemEnabled,
+      setpoint,
+      rpm,
+      error,
+      throttleUs,
+      kp,
+      ki,
+      kd,
+      motor1.getState()
+    );
+  }
 
-      delay(50);
+  delay(50);
 }
