@@ -12,7 +12,7 @@
 #include "Reciever_Info.h" // Data Library
 
 // Radio Library
-#include "RadioPayload.h" // Data Library
+#include "Robust_Payload.h" // Data Library
 #include "NRF_Radio.h"    // Hardware Library
 
 
@@ -104,6 +104,9 @@ void setup() {
     Serial.begin(115200);
     delay(200);
 
+    Serial.print("RadioPayload size: ");
+    Serial.println(sizeof(RadioPayload));
+
     oled_display.begin("RX Servo Control");
 
     // Initialize the I2C Buses
@@ -172,40 +175,40 @@ void loop() {
             Serial.println("----- CONTROL PACKET -----");
 
             Serial.print(">J1 X: ");
-            Serial.println(controlRx.joy1X);
+            Serial.println(controlRx.control.joy1X);
 
             Serial.print(">J1 Y: ");
-            Serial.println(controlRx.joy1Y);
+            Serial.println(controlRx.control.joy1Y);
 
             Serial.print(">J1 B: ");
-            Serial.println(controlRx.joy1Button);
+            Serial.println(controlRx.control.joy1Button);
 
             Serial.print(">J2 X: ");
-            Serial.println(controlRx.joy2X);
+            Serial.println(controlRx.control.joy2X);
 
             Serial.print(">J2 Y: ");
-            Serial.println(controlRx.joy2Y);
+            Serial.println(controlRx.control.joy2Y);
 
             Serial.print(">J2 B: ");
-            Serial.println(controlRx.joy2Button);
+            Serial.println(controlRx.control.joy2Button);
 
             Serial.print(">P1: ");
-            Serial.println(controlRx.pot1);
+            Serial.println(controlRx.control.pot1);
 
             Serial.print(">P2: ");
-            Serial.println(controlRx.pot2);
+            Serial.println(controlRx.control.pot2);
 
             Serial.print(">P3: ");
-            Serial.println(controlRx.pot3);
+            Serial.println(controlRx.control.pot3);
 
             Serial.print(">S1: ");
-            Serial.println(controlRx.switch1);
+            Serial.println(controlRx.control.switch1);
 
             Serial.print(">S2: ");
-            Serial.println(controlRx.switch2);
+            Serial.println(controlRx.control.switch2);
 
             Serial.print(">S3: ");
-            Serial.println(controlRx.switch3);
+            Serial.println(controlRx.control.switch3);
 
             Serial.println();
         }
@@ -215,8 +218,8 @@ void loop() {
     // 3) Control The devices!
     // ======================================================
     // 3A) Control the Motors
-    int throttle1 = map(controlRx.pot2, 0, 4095, 1000, 2000);
-    int throttle2 = map(controlRx.pot3, 0, 4095, 1000, 2000);
+    int throttle1 = map(controlRx.control.pot2, 0, 4095, 1000, 2000);
+    int throttle2 = map(controlRx.control.pot3, 0, 4095, 1000, 2000);
     if (radio.isConnected())
     {
         Motor1.arm(throttle1);
@@ -225,16 +228,16 @@ void loop() {
         Motor2.arm(throttle1);
         Motor2.setThrottle(throttle1);
 
-        Motor3.arm(throttle1);
+        Motor3.arm(throttle2);
         Motor3.setThrottle(throttle2);
 
-        Motor4.arm(throttle1);
+        Motor4.arm(throttle2);
         Motor4.setThrottle(throttle2);
 
-        Motor5.arm(throttle1);
+        Motor5.arm(throttle2);
         Motor5.setThrottle(throttle2);
 
-        Motor6.arm(throttle1);
+        Motor6.arm(throttle2);
         Motor6.setThrottle(throttle2);
     }
     else
@@ -248,14 +251,14 @@ void loop() {
     }
 
     // 3B) Control the Servos
-    uint8_t servoAngle = map(controlRx.pot1, 0, 4095, 0, 180);
+    uint8_t servoAngle = map(controlRx.control.pot1, 0, 4095, 0, 180);
     TopRight_Servo.write(servoAngle);
     TopLeft_Servo.write(servoAngle);
     BottomRight_Servo.write(servoAngle);
     BottomLeft_Servo.write(servoAngle);
 
     // 3C) Control the Headlights
-    if (controlRx.switch1)
+    if (controlRx.control.switch1)
     {
         if (rect1.isOff()) rect1.startCenterFill(120);
         if (rect2.isOff()) rect2.startCenterFill(120);
@@ -289,17 +292,17 @@ void loop() {
 
         out.type = PacketType::TELEMETRY;
 
-        out.motor_1_state = Motor1.getState();
-        out.motor_2_state = Motor2.getState();
-        out.motor_3_state = Motor3.getState();
-        out.motor_4_state = Motor4.getState();
-        out.motor_5_state = Motor5.getState();
-        out.motor_6_state = Motor6.getState();
+        out.telemetry.motor_1_state = Motor1.getState();
+        out.telemetry.motor_2_state = Motor2.getState();
+        out.telemetry.motor_3_state = Motor3.getState();
+        out.telemetry.motor_4_state = Motor4.getState();
+        out.telemetry.motor_5_state = Motor5.getState();
+        out.telemetry.motor_6_state = Motor6.getState();
 
-        out.Servo_1_Angle = servoAngle;
-        out.Servo_2_Angle = servoAngle;
-        out.Servo_3_Angle = servoAngle;
-        out.Servo_4_Angle = servoAngle;
+        out.telemetry.Servo_1_Angle = servoAngle;
+        out.telemetry.Servo_2_Angle = servoAngle;
+        out.telemetry.Servo_3_Angle = servoAngle;
+        out.telemetry.Servo_4_Angle = servoAngle;
         
        
         radio.sendPackage(out);
@@ -324,9 +327,9 @@ void loop() {
             servoAngle,
             servoAngle,
             servoAngle,
-            controlRx.pot1,
-            controlRx.pot2,
-            controlRx.pot3,
+            controlRx.control.pot1,
+            controlRx.control.pot2,
+            controlRx.control.pot3,
             radio.isConnected(),
             Motor1.getState(),
             Motor2.getState(),

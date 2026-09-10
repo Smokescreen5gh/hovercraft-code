@@ -1,10 +1,13 @@
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 V6 8/30/2026
-Was able to connect 6 motors. However I only have tested motors 3 and 4 for now. 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Was able to connect 6 motors. However I only have tested motors 3 and 4 for now. This was to test if i can control 2 BLDC motors with only one input. 
 
-
-Issues
+(BUGS(
 1. Motor does not disable itself after the radio module is disconnected. it will spin at the throttle the potentiometer is left at before it got disconnected. Safety issue
-        - Fix, motor 3 and 4 would use potentiometer 3 data (throttle 2) for its control, but used potentiomter 2 (throttle 1) for arming.
+        - (Fix, motor 3 and 4 would use potentiometer 3 data (throttle 2) for its control, but used potentiomter 2 (throttle 1) for arming.
         - so when the controller was running, potentiometer 2 was at 0 while pot 3 was active. 
         - when disconnect and reconnect, the motors would arm becaues pot 2 was at 0. 
 
@@ -12,28 +15,72 @@ Issues
 
 However I can still control the motors perfectly even when the transmitter is showing dis intermiedittly. this could be a heartbeat packet issue. 
 
+(Fixes(
+32 Bytes overflow fix
+1) what we had before
+- We had one large RadioPayload struct for everything
+    - control, telemetry, heartbeat data
+    - every packet carried space for all those feilds even if that one packet only needed one type of dta
+2) What became the problem
+- The payload grew to 36 bytes when taking into account of the motor states
+- The radio can only support 32 bytes
+- Caused missing and corrupted data Bug #2 
+
+3) The fix
+- Data was split into seperate logic groups
+    - controlpayload
+    - telemetry payload
+    - those were placed inside a union
+    - We kept universal fields like PacketType and counter at the top level so the generic NRF driver could still use them.
+    - How the union helps
+        - A normal struct would allocate memory for: CONTROL data plus TELEMETRY data
+        - A union lets both structures share the same memory space.
+        - Only the larger of the two needs to fit in memory at one time.
+        - This works because a packet is either CONTROL or TELEMETRY, not both at once.
+    - New packet Behavior
+        - Control Packet uses
+            packet.control.pot1
+            packet.control.joy1X
+        - Telemtery Packet use:
+            packet.telemetry.motor_1_state
+            packet.telemetry.Servo_1_Angle
+4) Result
+Old payload: 36 bytes
+New robust payload: 26 bytes
+We are now safely under the nRF24L01's 32-byte limit.
+The payload is more efficient, cleaner, and much easier to expand without immediately wasting bytes.
 
 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 V5 8/15/2026
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 All 4 Headlight units are working and respond to radio
 
 Intialized 3 TPIC ICs
 Operating 4 units of 6 LEDs
 
+
+
+
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 V4 8/15/2026
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Integrated PCA9685 board to control various PWM devices on the reciever side.
 
 Transmitter has the same input devices and now can control the pwm devices on the reciever side 
 
 
------------------------------------------------------
+
 Bugs/Improvements
 -----------------------------------------------------
-================= BUGS ===============================
+(BUGS(
 
 
 
-=================  Improvmenets ======================
+(Improvmenets(
 1. Made payload package agnostic to the NRF Driver 
 
 The NRF radio driver was modified to be payload-agnostic by converting NrfRadio into a templated class. Previously, the driver was hard-coded to use a single RadioPayload structure, which meant every transmitter/receiver configuration had to share and continuously modify the same payload file.
@@ -41,7 +88,13 @@ The NRF radio driver was modified to be payload-agnostic by converting NrfRadio 
 With the new approach, each test configuration can define and use its own payload type:
 
 
+
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 V3 8/11/2026
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Full Bi Directional Transmitter built and tested with a dummy reciever
 
 1. Transmitter actively reads pot data, joystick data, toggle switch data
@@ -52,13 +105,11 @@ Full Bi Directional Transmitter built and tested with a dummy reciever
 Basically adding on from V2 but now sending data and recieving data via NRF for bidirectional communication
 
 
------------------------------------------------------
 Bugs/Improvements
 -----------------------------------------------------
-================= BUGS ===============================
+(BUGS(
 
-
-=================  Improvmenets ======================
+(Improvmenets(
 First attempt, the reciever had oscillitoary behavior where it will switch between a recieved input value from the transmtter and a value of 0
 
 The issue lied in the way the code was structured not an issue with the connection
@@ -73,7 +124,7 @@ The reciever was reading values directly from
     - We are sending different type of packets: heatbeat, control, telemetry
     - only when a control packet arrives, do the "in" variables gets filled with the input commands
 
-********* Fix ********
+(Fixes(
 Create a place to store the incoming control packet
     - Created RadioPayload controlRx{};
 
@@ -107,8 +158,9 @@ In project 13 "reciever.cpp" I did something similar except I copied each incomi
     Instead of 
         int throttle1 = map(in.pot1Rx, 0, 4095, 1000, 2000);
 
-
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 V2 8/10/2026
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Created a working transmitter project where it can read all input devices
 
     - 2 analog sticks (with button reading)
