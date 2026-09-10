@@ -1,0 +1,55 @@
+Hovercraft Transmitter Mark 1
+
+GOAL: Have a stable controller reciever setup to control onboard hovercraft electronics. 
+- Control 6 brushless motors
+- Control 4 servos
+- Control headlight array with animnation
+- Control RGB Strip
+- Read and send pressure data from reciever to Transmitter
+
+Checkpoints:
+
+---------------------------------------------------------------------------------------------------------------------------------------
+Checkpoint 1: I2C Busses
+---------------------------------------------------------------------------------------------------------------------------------------
+
+The OLED Display, Pressure Sensors and PWM driver board communicates via I2C
+Because the Pressure Sensors use the same I2C address, we will need 2 seperate I2C busses.
+
+1) Bus #1
+    - This will take care of the OLED Sensor and the First Pressure Sensor
+
+2) Bus #2
+    - This will take care of the pwm board the Second Pressure Sensor
+
+---------------------------------------------------------------------------------------------------------------------------------------
+Checkpoint 2: Configure the PCA9685 PWM board
+---------------------------------------------------------------------------------------------------------------------------------------
+    - Figure out the wiring
+    - Power the board and logic
+
+---------------------------------------------------------------------------------------------------------------------------------------
+checkpoint 4: connect with transmitter (touch on payload, touch on oled, touch on communication)
+---------------------------------------------------------------------------------------------------------------------------------------
+ goal: have the potentiometer of the transmitter control all 4 servos on the reciever checkpoint 
+ 
+---------------------------------------------------------------------------------------------------------------------------------------
+5: led control (look into our headlight project, and rgb project) have it be controled by transmitter 
+---------------------------------------------------------------------------------------------------------------------------------------
+goal: setup the headlights with the shift register (we did one but we need to make 4 of those) then have the toggle switch of the transmitter turn on and off the headlights 
+
+---------------------------------------------------------------------------------------------------------------------------------------
+checkpoint 6: rgb led control 
+---------------------------------------------------------------------------------------------------------------------------------------
+goal: in the same light project before, we also controlled an rgb strip i want to use another potentiomter from the transmitter to change the rgb hue of the rgb leds 
+
+---------------------------------------------------------------------------------------------------------------------------------------
+checkpoint 7: BLDC CONTROLLLLLL 
+---------------------------------------------------------------------------------------------------------------------------------------
+goal: connect the bldcs into the pwm board and have the joysticks control the motors on the reciever transmitter oled will display the status of each motor. for now we will have the third potentiomter control 2 lift motors and one joy stick control 2 thrust motors and 2nd joystick control the remaining 2 thurst motors 
+
+
+---------------------------------------------------------------------------------------------------------------------------------------
+checkpoint 8: Pressure Sensor 
+---------------------------------------------------------------------------------------------------------------------------------------
+last we have the presssure sensors to the project to the reciever. reciever shall send pressure telemtry back to the transmitter
