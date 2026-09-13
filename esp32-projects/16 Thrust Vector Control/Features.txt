@@ -1,55 +1,178 @@
-Hovercraft Transmitter Mark 1
+Thrust Vectoring Nozzle Mark 1
 
-GOAL: Have a stable controller reciever setup to control onboard hovercraft electronics. 
-- Control 6 brushless motors
-- Control 4 servos
-- Control headlight array with animnation
-- Control RGB Strip
-- Read and send pressure data from reciever to Transmitter
+GOAL: Have a 2-servo thrust vectoring nozzle setup where I can input a desired nozzle angle and both servos work together to achieve that angle.
+- Control 2 servos using PCA9685 PWM board
+- Command servo angles through Serial Monitor
+- Find the physical articulation limits of both servo joints
+- Find the centered position of both servos
+- Set software limits so the servos cannot exceed the physical mechanism limits
+- Synchronize both servos to achieve a desired nozzle angle
+- Final nozzle range goal: -45 degrees to +45 degrees
 
 Checkpoints:
 
 ---------------------------------------------------------------------------------------------------------------------------------------
-Checkpoint 1: I2C Busses
+Checkpoint 1: Configure the PCA9685 PWM board
 ---------------------------------------------------------------------------------------------------------------------------------------
 
-The OLED Display, Pressure Sensors and PWM driver board communicates via I2C
-Because the Pressure Sensors use the same I2C address, we will need 2 seperate I2C busses.
+Goal: Initialize the PCA9685 board and verify that both servos can be controlled individually.
 
-1) Bus #1
-    - This will take care of the OLED Sensor and the First Pressure Sensor
-
-2) Bus #2
-    - This will take care of the pwm board the Second Pressure Sensor
-
----------------------------------------------------------------------------------------------------------------------------------------
-Checkpoint 2: Configure the PCA9685 PWM board
----------------------------------------------------------------------------------------------------------------------------------------
     - Figure out the wiring
-    - Power the board and logic
+    - Power the PCA board and servo power correctly
+    - Initialize the PCA9685
+    - Connect Servo #1: Entry Ball Servo
+    - Connect Servo #2: Nozzle Servo
+    - Verify both servos respond correctly
 
 ---------------------------------------------------------------------------------------------------------------------------------------
-checkpoint 4: connect with transmitter (touch on payload, touch on oled, touch on communication)
+Checkpoint 2: Serial Monitor Servo Control
 ---------------------------------------------------------------------------------------------------------------------------------------
- goal: have the potentiometer of the transmitter control all 4 servos on the reciever checkpoint 
- 
----------------------------------------------------------------------------------------------------------------------------------------
-5: led control (look into our headlight project, and rgb project) have it be controled by transmitter 
----------------------------------------------------------------------------------------------------------------------------------------
-goal: setup the headlights with the shift register (we did one but we need to make 4 of those) then have the toggle switch of the transmitter turn on and off the headlights 
+
+Goal: Make a simple program where I can type an angle into the Serial Monitor and command a servo to that position.
+
+    - Type desired servo angle into Serial Monitor
+    - Read the Serial input
+    - Convert the desired angle into the PCA9685 PWM command
+    - Move Servo #1 to the desired angle
+    - Repeat test with Servo #2
+    - Verify commanded angle matches expected servo movement
 
 ---------------------------------------------------------------------------------------------------------------------------------------
-checkpoint 6: rgb led control 
+Checkpoint 3: Find Servo Limits and Center Position
 ---------------------------------------------------------------------------------------------------------------------------------------
-goal: in the same light project before, we also controlled an rgb strip i want to use another potentiomter from the transmitter to change the rgb hue of the rgb leds 
+
+Goal: Determine the usable physical range of both servos when installed in the thrust vectoring mechanism.
+
+    - Slowly move Servo #1 toward one physical articulation limit
+    - Record the maximum safe servo position
+    - Move Servo #1 toward the opposite articulation limit
+    - Record the minimum safe servo position
+    - Determine the center position between the two limits
+
+    - Repeat the same process for Servo #2
+
+    - Save:
+        Servo 1 Minimum
+        Servo 1 Center
+        Servo 1 Maximum
+
+        Servo 2 Minimum
+        Servo 2 Center
+        Servo 2 Maximum
 
 ---------------------------------------------------------------------------------------------------------------------------------------
-checkpoint 7: BLDC CONTROLLLLLL 
+Checkpoint 4: Set Servo Software Limits
 ---------------------------------------------------------------------------------------------------------------------------------------
-goal: connect the bldcs into the pwm board and have the joysticks control the motors on the reciever transmitter oled will display the status of each motor. for now we will have the third potentiomter control 2 lift motors and one joy stick control 2 thrust motors and 2nd joystick control the remaining 2 thurst motors 
 
+Goal: Prevent either servo from commanding an angle that would force the mechanism past its physical articulation limits.
+
+    - Create minimum and maximum limits for Servo #1
+    - Create minimum and maximum limits for Servo #2
+    - Clamp Serial Monitor commands to the allowed range
+    - Example: if Servo #1 can only safely articulate +/-16 degrees, prevent commands outside that range
+    - Verify the mechanism cannot accidentally drive itself into a hard stop
 
 ---------------------------------------------------------------------------------------------------------------------------------------
-checkpoint 8: Pressure Sensor 
+Checkpoint 5: Define Nozzle Angle
 ---------------------------------------------------------------------------------------------------------------------------------------
-last we have the presssure sensors to the project to the reciever. reciever shall send pressure telemtry back to the transmitter
+
+Goal: Separate the desired NOZZLE angle from the individual SERVO angles.
+
+Example:
+
+    User Input:
+        +45 degrees
+
+    Desired Result:
+        Nozzle points 45 degrees to the right
+
+    User Input:
+        -45 degrees
+
+    Desired Result:
+        Nozzle points 45 degrees to the left
+
+The program will calculate how Servo #1 and Servo #2 need to move to produce the desired nozzle angle.
+
+---------------------------------------------------------------------------------------------------------------------------------------
+Checkpoint 6: Servo Synchronization - Approach 1
+---------------------------------------------------------------------------------------------------------------------------------------
+
+Goal: Test sequential servo movement.
+
+Approach:
+
+    - Servo #1 rotates first
+    - Servo #1 continues moving until it reaches its maximum allowed articulation
+    - If more nozzle angle is required, Servo #2 provides the remaining angle
+
+Example:
+
+    Desired nozzle angle = 30 degrees
+
+    Servo #1 maximum articulation = 16 degrees
+
+    Servo #1 = 16 degrees
+    Servo #2 = 14 degrees
+
+    Total nozzle angle = 30 degrees
+
+Test the system across the full -45 to +45 degree nozzle range.
+
+---------------------------------------------------------------------------------------------------------------------------------------
+Checkpoint 7: Servo Synchronization - Approach 2
+---------------------------------------------------------------------------------------------------------------------------------------
+
+Goal: Test both servos working together to generate the commanded nozzle angle.
+
+Approach:
+
+    - Servo #1 and Servo #2 move together
+    - Their contributions add together to create the desired nozzle angle
+
+Example:
+
+    Desired nozzle angle = 30 degrees
+
+    Servo #1 = 15 degrees
+    Servo #2 = 15 degrees
+
+    Total nozzle angle = 30 degrees
+
+The exact ratio between Servo #1 and Servo #2 can be changed depending on the geometry and physical limits of the nozzle.
+
+---------------------------------------------------------------------------------------------------------------------------------------
+Checkpoint 8: Final Thrust Vectoring Control
+---------------------------------------------------------------------------------------------------------------------------------------
+
+Goal: Type one desired nozzle angle into Serial Monitor and have the system automatically coordinate both servos.
+
+Desired operation:
+
+    Serial Input:
+        0
+
+    Nozzle:
+        Centered
+
+    Serial Input:
+        +45
+
+    Nozzle:
+        45 degrees right
+
+    Serial Input:
+        -45
+
+    Nozzle:
+        45 degrees left
+
+Final software should:
+
+    - Accept desired nozzle angle
+    - Limit command between -45 and +45 degrees
+    - Calculate Servo #1 position
+    - Calculate Servo #2 position
+    - Respect individual servo limits
+    - Move both servos to create the commanded nozzle angle
+    - Return both servos to their calibrated center when commanded to 0 degrees

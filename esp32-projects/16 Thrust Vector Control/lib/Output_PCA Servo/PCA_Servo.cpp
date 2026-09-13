@@ -21,11 +21,7 @@ void PCA_Servo::write(int angle)
 {
     angle = constrain(angle, 0, 180);
 
-    uint16_t pulse = map(angle,
-                         0,
-                         180,
-                         _minPulse,
-                         _maxPulse);
+    uint16_t pulse = map(angle, 0, 180, _minPulse, _maxPulse);
 
     _pwm.setPWM(_channel, 0, pulse);
 
